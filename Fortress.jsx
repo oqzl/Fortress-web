@@ -1,7 +1,7 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 
 // ── Game Constants ──
-const BOARD_SIZE = 7;
+const BOARD_SIZE = 6;
 const MAX_TURNS = 21;
 const MAX_LEVEL = 3;
 const PLAYER = 1;   // Human
@@ -146,19 +146,20 @@ function evaluate(board) {
 }
 
 // ── AI: minimax with alpha-beta ──
-function minimax(board, depth, alpha, beta, isAI, turnLeft) {
+function minimax(board, depth, alpha, beta, isAI, turnLeft, options = {}) {
   if (depth === 0 || turnLeft <= 0) return { score: evaluate(board), move: null };
   
   const who = isAI ? AI : PLAYER;
-  const moves = getValidMoves(board, who);
-  if (moves.length === 0) return { score: evaluate(board), move: null };
+  const candidates = getCandidateMoves(board, who, options.maxBranching);
+  if (candidates.length === 0) return { score: evaluate(board), move: null };
 
-  let bestMove = moves[0];
+  let bestMove = candidates[0].move;
   if (isAI) {
     let maxScore = -Infinity;
-    for (const move of moves) {
+    for (const candidate of candidates) {
+      const move = candidate.move;
       const newBoard = applyMove(board, move, AI);
-      const { score } = minimax(newBoard, depth - 1, alpha, beta, false, turnLeft - 1);
+      const { score } = minimax(newBoard, depth - 1, alpha, beta, false, turnLeft - 1, options);
       if (score > maxScore) { maxScore = score; bestMove = move; }
       alpha = Math.max(alpha, score);
       if (beta <= alpha) break;
@@ -166,15 +167,77 @@ function minimax(board, depth, alpha, beta, isAI, turnLeft) {
     return { score: maxScore, move: bestMove };
   } else {
     let minScore = Infinity;
-    for (const move of moves) {
+    for (const candidate of candidates) {
+      const move = candidate.move;
       const newBoard = applyMove(board, move, PLAYER);
-      const { score } = minimax(newBoard, depth - 1, alpha, beta, true, turnLeft - 1);
+      const { score } = minimax(newBoard, depth - 1, alpha, beta, true, turnLeft - 1, options);
       if (score < minScore) { minScore = score; bestMove = move; }
       beta = Math.min(beta, score);
       if (beta <= alpha) break;
     }
     return { score: minScore, move: bestMove };
   }
+}
+
+function scoreMoveHeuristic(board, move, who, strengthMap, controlMap) {
+  const opponent = who === PLAYER ? AI : PLAYER;
+  const ownIdx = who - 1;
+  const oppIdx = opponent - 1;
+  const center = (BOARD_SIZE - 1) / 2;
+  const affectedTiles = [[move.r, move.c], [move.r + 1, move.c], [move.r - 1, move.c], [move.r, move.c + 1], [move.r, move.c - 1]]
+    .filter(([r, c]) => r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE);
+
+  let score = 0;
+  if (move.type === "upgrade") {
+    score += 2 + board[move.r][move.c].level * 0.75;
+  } else if (controlMap[move.r][move.c] === who) {
+    score += 1.5;
+  } else if (controlMap[move.r][move.c] === 0) {
+    score += 1;
+  }
+
+  score += (BOARD_SIZE - (Math.abs(move.r - center) + Math.abs(move.c - center))) * 0.35;
+
+  for (const [r, c] of affectedTiles) {
+    const ownStrength = strengthMap[r][c][ownIdx];
+    const oppStrength = strengthMap[r][c][oppIdx];
+    const beforeMargin = ownStrength - oppStrength;
+    const afterMargin = beforeMargin + 1;
+    const targetCell = board[r][c];
+
+    if (beforeMargin <= 0 && afterMargin > 0) score += 2.5;
+    else if (beforeMargin < 0 && afterMargin === 0) score += 1.25;
+    else if (afterMargin > 0) score += 0.4;
+
+    if (targetCell.castle === opponent && afterMargin > 0) {
+      score += 3 + targetCell.level;
+    }
+
+    if (targetCell.castle === who && beforeMargin <= 0) {
+      score += 1.5;
+    }
+  }
+
+  return score;
+}
+
+function getCandidateMoves(board, who, maxMoves = Infinity) {
+  const moves = getValidMoves(board, who);
+  if (moves.length <= maxMoves) {
+    return moves.map(move => ({ move }));
+  }
+
+  const strengthMap = calcStrength(board);
+  const controlMap = calcControl(strengthMap);
+
+  return moves
+    .map(move => ({
+      move,
+      score: scoreMoveHeuristic(board, move, who, strengthMap, controlMap),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxMoves)
+    .map(({ move }) => ({ move }));
 }
 
 function aiChooseMove(board, turnsLeft, difficulty) {
@@ -184,11 +247,11 @@ function aiChooseMove(board, turnsLeft, difficulty) {
   // Difficulty settings: { depth, blunderRate }
   // blunderRate = chance of picking a random (non-optimal) move
   const settings = {
-    easy:   { baseDepth: 1, maxDepth: 1, blunderRate: 0.40 },
-    normal: { baseDepth: 1, maxDepth: 2, blunderRate: 0.15 },
-    hard:   { baseDepth: 2, maxDepth: 3, blunderRate: 0.03 },
-    master: { baseDepth: 2, maxDepth: 4, blunderRate: 0 },
-  }[difficulty] || { baseDepth: 2, maxDepth: 3, blunderRate: 0.05 };
+    easy:   { baseDepth: 1, maxDepth: 1, blunderRate: 0.40, maxBranching: 10 },
+    normal: { baseDepth: 1, maxDepth: 2, blunderRate: 0.15, maxBranching: 12 },
+    hard:   { baseDepth: 2, maxDepth: 3, blunderRate: 0.03, maxBranching: 10 },
+    master: { baseDepth: 2, maxDepth: 4, blunderRate: 0, maxBranching: 8 },
+  }[difficulty] || { baseDepth: 2, maxDepth: 3, blunderRate: 0.05, maxBranching: 10 };
 
   // Blunder: pick a random move
   if (Math.random() < settings.blunderRate) {
@@ -201,15 +264,17 @@ function aiChooseMove(board, turnsLeft, difficulty) {
       ? settings.maxDepth
       : settings.baseDepth;
 
-  const { move } = minimax(board, depth, -Infinity, Infinity, true, turnsLeft);
+  const { move } = minimax(board, depth, -Infinity, Infinity, true, turnsLeft, {
+    maxBranching: settings.maxBranching,
+  });
   return move;
 }
 
 // ── Castle SVG ──
 function CastleSVG({ level, owner, size = 36, gatesClosed = false }) {
   const colors = owner === PLAYER
-    ? { wall: "#3b5998", roof: "#1a3a6b", flag: "#e74c3c", stone: "#5577bb", gate: "#1a1a2e" }
-    : { wall: "#8b4513", roof: "#5a2d0c", flag: "#2ecc71", stone: "#a0633c", gate: "#1a1a2e" };
+    ? { wall: "#3b5998", roof: "#1a3a6b", flag: "#6ea8fe", stone: "#5577bb", gate: "#1a1a2e" }
+    : { wall: "#8b4513", roof: "#5a2d0c", flag: "#f87171", stone: "#a0633c", gate: "#1a1a2e" };
 
   const gateColor = gatesClosed ? (owner === PLAYER ? "#2a4070" : "#6b3a1a") : colors.gate;
 
@@ -255,6 +320,30 @@ function CastleSVG({ level, owner, size = 36, gatesClosed = false }) {
   );
 }
 
+function TerritoryFlagSVG({ owner, size = 20 }) {
+  const colors = owner === PLAYER
+    ? { pole: "#d7dbe8", flag: "#6ea8fe", trim: "#dbeafe" }
+    : { pole: "#e8d7b8", flag: "#f87171", trim: "#fee2e2" };
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect x="8" y="3" width="2" height="13" fill={colors.pole} />
+      <rect x="10" y="4" width="6" height="2" fill={colors.flag} />
+      <rect x="10" y="6" width="5" height="2" fill={colors.flag} />
+      <rect x="10" y="8" width="4" height="2" fill={colors.flag} />
+      <rect x="10" y="4" width="1" height="6" fill={colors.trim} />
+      <rect x="7" y="16" width="4" height="2" fill={colors.pole} />
+    </svg>
+  );
+}
+
 // ── Hook: responsive cell size ──
 function useCellSize() {
   const [size, setSize] = useState(56);
@@ -288,6 +377,7 @@ export default function FortressGame() {
   const [difficulty, setDifficulty] = useState("normal");
   const [firstPlayer, setFirstPlayer] = useState(PLAYER);
   const [showRules, setShowRules] = useState(false);
+  const [turnNotice, setTurnNotice] = useState(null);
   const cellSize = useCellSize();
 
   const strengthMap = useMemo(() => calcStrength(board), [board]);
@@ -331,6 +421,7 @@ export default function FortressGame() {
 
     const nextTurn = turn + 1;
     if (!endTurn(newBoard, nextTurn)) {
+      setTurnNotice(null);
       setTurn(nextTurn);
       setCurrentPlayer(AI);
       setAiThinking(true);
@@ -349,18 +440,38 @@ export default function FortressGame() {
         setLastMove({ r: move.r, c: move.c, who: AI });
         const nextTurn = turn + 1;
         if (!endTurn(newBoard, nextTurn)) {
+          setTurnNotice(null);
           setTurn(nextTurn);
           setCurrentPlayer(PLAYER);
         }
       } else {
-        // AI has no valid moves, skip
-        setTurn(t => t + 1);
-        setCurrentPlayer(PLAYER);
+        const nextTurn = turn + 1;
+        if (!endTurn(board, nextTurn)) {
+          setTurn(nextTurn);
+          setCurrentPlayer(PLAYER);
+          setTurnNotice("CPU has no valid moves and passes.");
+        }
       }
       setAiThinking(false);
     }, 400);
     return () => clearTimeout(timer);
   }, [currentPlayer, gameOver, aiThinking, board, turn, difficulty, endTurn]);
+
+  useEffect(() => {
+    if (currentPlayer !== PLAYER || gameOver || aiThinking || validMoves.length > 0) return;
+
+    const timer = setTimeout(() => {
+      const nextTurn = turn + 1;
+      if (!endTurn(board, nextTurn)) {
+        setTurn(nextTurn);
+        setCurrentPlayer(AI);
+        setAiThinking(true);
+        setTurnNotice("You have no valid moves and must pass.");
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [currentPlayer, gameOver, aiThinking, validMoves, turn, board, endTurn]);
 
   // If firstPlayer is AI, trigger AI on game start
   useEffect(() => {
@@ -378,10 +489,10 @@ export default function FortressGame() {
     setResult(null);
     setLastMove(null);
     setAiThinking(false);
+    setTurnNotice(null);
   }, []);
 
   const totalTurns = MAX_TURNS;
-  const playerTurnNum = Math.ceil(turn / 2);
 
   return (
     <div style={{
@@ -409,7 +520,7 @@ export default function FortressGame() {
           textShadow: "0 2px 12px rgba(212,168,67,0.3)"
         }}>FORTRESS</h1>
         <div style={{ fontSize: 10, letterSpacing: 3, opacity: 0.5, marginTop: 1 }}>
-          SSI · 1983 · JIM TEMPLEMAN
+          SSI · 1983 · JIM TEMPLEMAN · PATTY DENBROOK
         </div>
       </div>
 
@@ -502,6 +613,11 @@ export default function FortressGame() {
                     <CastleSVG level={cell.level} owner={cell.castle}
                       size={Math.round(cellSize * 0.68)} gatesClosed={gatesClosed} />
                   )}
+                  {cell.castle === 0 && ctrl !== 0 && (
+                    <div style={{ opacity: 0.85, transform: "translateY(-2px)" }}>
+                      <TerritoryFlagSVG owner={ctrl} size={Math.round(cellSize * 0.42)} />
+                    </div>
+                  )}
                   {cell.castle === 0 && canAct && isHovered && (
                     <div style={{ opacity: 0.3 }}>
                       <CastleSVG level={1} owner={PLAYER} size={Math.round(cellSize * 0.54)} />
@@ -549,9 +665,17 @@ export default function FortressGame() {
             {result === "win" ? "🏆 YOU WIN!" : result === "lose" ? "DEFEAT" : "DRAW"}
             {" "}({tiles.player} vs {tiles.ai})
           </span>
+        ) : aiThinking && turnNotice ? (
+          <span style={{ opacity: 0.75 }}>
+            {turnNotice} CPU is thinking...
+          </span>
         ) : aiThinking ? (
           <span style={{ opacity: 0.6, fontStyle: "italic" }}>
             ⚔ CPU is thinking...
+          </span>
+        ) : turnNotice ? (
+          <span style={{ opacity: 0.75 }}>
+            {turnNotice}
           </span>
         ) : (
           <span style={{ opacity: 0.7 }}>
