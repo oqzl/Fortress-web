@@ -16,6 +16,9 @@ const BOARD_FRAME_PADDING = 4;
 const BOARD_FRAME_BORDER = 2;
 const BOARD_GRID_GAP = 0;
 const HOVER_SCALE = BOARD_GRID_GAP > 0 ? 1.02 : 1;
+const CASTLE_ICON_SCALE = 0.76;
+const FLAG_ICON_SCALE = 0.5;
+const HOVER_CASTLE_ICON_SCALE = 0.62;
 
 // ── Helper: create empty board ──
 function createEmptyBoard() {
@@ -284,42 +287,21 @@ function aiChooseMove(board, turnsLeft, difficulty) {
 function CastleSVG({ level, owner, size = 36, gatesClosed = false }) {
   const fill = owner === PLAYER ? SCREEN_BLACK : PAPER_WHITE;
   const cutout = BOARD_GREEN;
-  const gateBar = owner === PLAYER ? PAPER_WHITE : SCREEN_BLACK;
 
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" shapeRendering="crispEdges" aria-hidden="true" focusable="false">
-      <rect x="6" y="22" width="6" height="10" fill={fill} />
-      <rect x="28" y="22" width="6" height="10" fill={fill} />
-      <rect x="10" y="24" width="20" height="8" fill={fill} />
-      <rect x="5" y="20" width="2" height="3" fill={fill} />
-      <rect x="9" y="20" width="2" height="3" fill={fill} />
-      <rect x="29" y="20" width="2" height="3" fill={fill} />
-      <rect x="33" y="20" width="2" height="3" fill={fill} />
-      <rect x="17" y="27" width="6" height="5" fill={cutout} />
+      <rect x="8" y="24" width="24" height="8" fill={fill} />
+      {!gatesClosed && (
+        <rect x="17" y="26" width="6" height="6" fill={cutout} />
+      )}
 
-      {gatesClosed && <>
-        <rect x="17" y="27" width="6" height="1" fill={gateBar} />
-        <rect x="17" y="29" width="6" height="1" fill={gateBar} />
-      </>}
+      {level >= 2 && (
+        <rect x="12" y="17" width="16" height="6" fill={fill} />
+      )}
 
-      {level >= 2 && <>
-        <rect x="15" y="12" width="10" height="12" fill={fill} />
-        <rect x="13" y="14" width="2" height="10" fill={fill} />
-        <rect x="25" y="14" width="2" height="10" fill={fill} />
-        <rect x="14" y="10" width="2" height="3" fill={fill} />
-        <rect x="19" y="10" width="2" height="3" fill={fill} />
-        <rect x="24" y="10" width="2" height="3" fill={fill} />
-      </>}
-
-      {level >= 3 && <>
-        <rect x="17" y="5" width="6" height="9" fill={fill} />
-        <rect x="16" y="4" width="8" height="2" fill={fill} />
-        <rect x="18" y="3" width="4" height="1" fill={fill} />
-        <rect x="20" y="0" width="1" height="2" fill={fill} />
-        <rect x="20" y="-3" width="1" height="4" fill={fill} />
-        <rect x="21" y="1" width="5" height="1" fill={fill} />
-        <rect x="21" y="2" width="3" height="1" fill={fill} />
-      </>}
+      {level >= 3 && (
+        <rect x="15" y="11" width="10" height="5" fill={fill} />
+      )}
     </svg>
   );
 }
@@ -336,11 +318,8 @@ function TerritoryFlagSVG({ owner, size = 20 }) {
       aria-hidden="true"
       focusable="false"
     >
-      <rect x="7" y="2" width="2" height="14" fill={fill} />
-      <rect x="9" y="4" width="6" height="2" fill={fill} />
-      <rect x="9" y="6" width="5" height="2" fill={fill} />
-      <rect x="9" y="8" width="4" height="2" fill={fill} />
-      <rect x="6" y="16" width="4" height="2" fill={fill} />
+      <rect x="6" y="7" width="2" height="11" fill={fill} />
+      <rect x="8" y="8" width="8" height="6" fill={fill} />
     </svg>
   );
 }
@@ -423,7 +402,7 @@ export default function FortressGame() {
   }, []);
 
   const handleClick = useCallback((r, c) => {
-    if (gameOver || currentPlayer !== PLAYER || aiThinking) return;
+    if (showRules || gameOver || currentPlayer !== PLAYER || aiThinking) return;
     if (!isValidMove(r, c)) return;
 
     const moveType = getMoveType(r, c);
@@ -439,11 +418,11 @@ export default function FortressGame() {
       setCurrentPlayer(AI);
       setAiThinking(true);
     }
-  }, [board, turn, gameOver, currentPlayer, aiThinking, isValidMove, getMoveType, endTurn]);
+  }, [board, turn, showRules, gameOver, currentPlayer, aiThinking, isValidMove, getMoveType, endTurn]);
 
   // AI turn
   useEffect(() => {
-    if (currentPlayer !== AI || gameOver || !aiThinking) return;
+    if (showRules || currentPlayer !== AI || gameOver || !aiThinking) return;
     const timer = setTimeout(() => {
       const turnsLeft = MAX_TURNS - turn + 1;
       const move = aiChooseMove(board, turnsLeft, difficulty);
@@ -468,10 +447,10 @@ export default function FortressGame() {
       setAiThinking(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [currentPlayer, gameOver, aiThinking, board, turn, difficulty, endTurn]);
+  }, [showRules, currentPlayer, gameOver, aiThinking, board, turn, difficulty, endTurn]);
 
   useEffect(() => {
-    if (currentPlayer !== PLAYER || gameOver || aiThinking || validMoves.length > 0) return;
+    if (showRules || currentPlayer !== PLAYER || gameOver || aiThinking || validMoves.length > 0) return;
 
     const timer = setTimeout(() => {
       const nextTurn = turn + 1;
@@ -484,14 +463,14 @@ export default function FortressGame() {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [currentPlayer, gameOver, aiThinking, validMoves, turn, board, endTurn]);
+  }, [showRules, currentPlayer, gameOver, aiThinking, validMoves, turn, board, endTurn]);
 
   // If firstPlayer is AI, trigger AI on game start
   useEffect(() => {
-    if (turn === 1 && currentPlayer === AI && !aiThinking && !gameOver) {
+    if (!showRules && turn === 1 && currentPlayer === AI && !aiThinking && !gameOver) {
       setAiThinking(true);
     }
-  }, [turn, currentPlayer, aiThinking, gameOver]);
+  }, [showRules, turn, currentPlayer, aiThinking, gameOver]);
 
   const resetGame = useCallback((first = PLAYER) => {
     setBoard(createEmptyBoard());
@@ -523,7 +502,20 @@ export default function FortressGame() {
       boxSizing: "border-box"
     }}>
       {/* Title */}
-      <div style={{ textAlign: "center", marginBottom: 10 }}>
+      <div style={{ position: "relative", textAlign: "center", marginBottom: 10, width: "100%", maxWidth: 440 }}>
+        <button
+          onClick={() => setShowRules(s => !s)}
+          style={{
+            ...btnStyle,
+            position: "absolute",
+            top: 0,
+            right: 0,
+            padding: "6px 12px",
+            fontSize: 11,
+          }}
+        >
+          {showRules ? "HIDE" : "RULES"}
+        </button>
         <div style={{
           display: "inline-block",
           padding: "10px 22px",
@@ -569,6 +561,7 @@ export default function FortressGame() {
 
       {/* Board */}
       <div style={{
+        position: "relative",
         background: SCREEN_BLACK,
         padding: BOARD_FRAME_PADDING,
         border: `${BOARD_FRAME_BORDER}px solid ${BOARD_GREEN}`,
@@ -633,16 +626,16 @@ export default function FortressGame() {
                 >
                   {cell.castle !== 0 && (
                     <CastleSVG level={cell.level} owner={cell.castle}
-                      size={Math.round(Math.min(cellSize.width, cellSize.height) * 0.68)} gatesClosed={gatesClosed} />
+                      size={Math.round(Math.min(cellSize.width, cellSize.height) * CASTLE_ICON_SCALE)} gatesClosed={gatesClosed} />
                   )}
                   {cell.castle === 0 && ctrl !== 0 && (
-                    <div style={{ opacity: 0.85, transform: "translateY(-2px)" }}>
-                      <TerritoryFlagSVG owner={ctrl} size={Math.round(Math.min(cellSize.width, cellSize.height) * 0.42)} />
+                    <div style={{ opacity: 0.85 }}>
+                      <TerritoryFlagSVG owner={ctrl} size={Math.round(Math.min(cellSize.width, cellSize.height) * FLAG_ICON_SCALE)} />
                     </div>
                   )}
                   {cell.castle === 0 && canAct && isHovered && (
                     <div style={{ opacity: 0.3 }}>
-                      <CastleSVG level={1} owner={PLAYER} size={Math.round(Math.min(cellSize.width, cellSize.height) * 0.54)} />
+                      <CastleSVG level={1} owner={PLAYER} size={Math.round(Math.min(cellSize.width, cellSize.height) * HOVER_CASTLE_ICON_SCALE)} />
                     </div>
                   )}
                   {cell.castle !== 0 && moveType === "upgrade" && isHovered && (
@@ -669,6 +662,91 @@ export default function FortressGame() {
             })
           )}
         </div>
+
+        {showRules && (
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 12,
+            background: "rgba(5, 5, 5, 0.88)",
+            boxSizing: "border-box",
+            zIndex: 2,
+          }}
+          onClick={() => setShowRules(false)}
+          >
+            <div style={{
+              width: "100%",
+              maxWidth: 420,
+              maxHeight: "100%",
+              overflowY: "auto",
+              background: SCREEN_BLACK,
+              border: `2px solid ${PAPER_WHITE}`,
+              padding: "14px 18px",
+              fontSize: 13,
+              lineHeight: 1.7,
+              color: PAPER_WHITE,
+              boxSizing: "border-box",
+              position: "relative",
+            }}
+            onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowRules(false)}
+                style={{
+                  ...btnStyle,
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  border: "none",
+                  padding: "2px 6px",
+                  fontSize: 16,
+                  lineHeight: 1,
+                }}
+                aria-label="Close rules"
+              >
+                ×
+              </button>
+              <div style={{ fontWeight: 700, color: PAPER_WHITE, marginBottom: 6, letterSpacing: 2, fontSize: 14 }}>
+                RULES
+              </div>
+              <p style={{ margin: "6px 0" }}>
+                <b>目的:</b> 全21ターン終了時に、より多くのマスを支配しているプレイヤーの勝利。
+              </p>
+              <p style={{ margin: "6px 0" }}>
+                <b>手番:</b> 各ターンに以下のいずれか1つを行う:
+              </p>
+              <p style={{ margin: "4px 0 4px 12px" }}>
+                • 敵に支配されていない空マスに城（Lv.1）を配置する
+              </p>
+              <p style={{ margin: "4px 0 4px 12px" }}>
+                • 自分の既存の城をアップグレードする（最大Lv.3）
+              </p>
+              <p style={{ margin: "6px 0" }}>
+                <b>影響力:</b> 城は自身とその上下左右のマスに、レベルと等しい「影響力」を投射する。
+              </p>
+              <p style={{ margin: "6px 0" }}>
+                <b>支配:</b> 各マスは合計影響力が高いプレイヤーが支配する。同値は中立。
+              </p>
+              <p style={{ margin: "6px 0" }}>
+                <b>捕獲:</b> 相手に支配されたマスの上にある城は即座に破壊される。連鎖あり。
+              </p>
+              <p style={{ margin: "6px 0" }}>
+                <b>閉門:</b> 城のある位置で敵の影響力と拮抗していると、門の切り欠きが消えて表示される。
+              </p>
+              <p style={{ margin: "6px 0", fontSize: 11, opacity: 0.6 }}>
+                マス左下の<span style={{
+                  color: SCREEN_BLACK,
+                  background: BOARD_GREEN,
+                  padding: "0 4px",
+                }}>黒数字</span>=あなたの影響力、
+                右下の<span style={{color:PAPER_WHITE, textShadow:`1px 1px 0 ${SCREEN_BLACK}`}}>白数字</span>=CPUの影響力
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Status */}
@@ -709,28 +787,6 @@ export default function FortressGame() {
 
       {/* Controls */}
       <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center" }}>
-        <button onClick={() => resetGame(firstPlayer)} style={btnStyle}>
-          NEW GAME
-        </button>
-
-        {/* First player toggle */}
-        <div style={{
-          display: "flex", overflow: "hidden",
-          border: `2px solid ${PAPER_WHITE}`
-        }}>
-          {[
-            { val: PLAYER, label: "先手" },
-            { val: AI, label: "後手" },
-          ].map(({ val, label }) => (
-            <button key={val} onClick={() => resetGame(val)} style={{
-              ...btnStyle, border: "none", borderRadius: 0,
-              background: firstPlayer === val ? PAPER_WHITE : SCREEN_BLACK,
-              color: firstPlayer === val ? SCREEN_BLACK : PAPER_WHITE,
-              padding: "6px 12px", fontSize: 11
-            }}>{label}</button>
-          ))}
-        </div>
-
         {/* Difficulty selector */}
         <div style={{
           display: "flex", overflow: "hidden",
@@ -751,62 +807,29 @@ export default function FortressGame() {
           ))}
         </div>
 
-        <button onClick={() => setShowRules(s => !s)} style={{...btnStyle, background: SCREEN_BLACK, borderColor: PAPER_WHITE}}>
-          {showRules ? "HIDE" : "RULES"}
+        {/* First player toggle */}
+        <div style={{
+          display: "flex", overflow: "hidden",
+          border: `2px solid ${PAPER_WHITE}`
+        }}>
+          {[
+            { val: PLAYER, label: "先手" },
+            { val: AI, label: "後手" },
+          ].map(({ val, label }) => (
+            <button key={val} onClick={() => resetGame(val)} style={{
+              ...btnStyle, border: "none", borderRadius: 0,
+              background: firstPlayer === val ? PAPER_WHITE : SCREEN_BLACK,
+              color: firstPlayer === val ? SCREEN_BLACK : PAPER_WHITE,
+              padding: "6px 12px", fontSize: 11
+            }}>{label}</button>
+          ))}
+        </div>
+
+        <button onClick={() => resetGame(firstPlayer)} style={btnStyle}>
+          NEW GAME
         </button>
       </div>
 
-      {/* Rules Panel */}
-      {showRules && (
-        <div style={{
-          marginTop: 10,
-          maxWidth: 440,
-          maxHeight: "30vh",
-          overflowY: "auto",
-          background: SCREEN_BLACK,
-          border: `2px solid ${PAPER_WHITE}`,
-          padding: "14px 18px",
-          fontSize: 13,
-          lineHeight: 1.7,
-          color: PAPER_WHITE
-        }}>
-          <div style={{ fontWeight: 700, color: PAPER_WHITE, marginBottom: 6, letterSpacing: 2, fontSize: 14 }}>
-            RULES
-          </div>
-          <p style={{ margin: "6px 0" }}>
-            <b>目的:</b> 全21ターン終了時に、より多くのマスを支配しているプレイヤーの勝利。
-          </p>
-          <p style={{ margin: "6px 0" }}>
-            <b>手番:</b> 各ターンに以下のいずれか1つを行う:
-          </p>
-          <p style={{ margin: "4px 0 4px 12px" }}>
-            • 敵に支配されていない空マスに城（Lv.1）を配置する
-          </p>
-          <p style={{ margin: "4px 0 4px 12px" }}>
-            • 自分の既存の城をアップグレードする（最大Lv.3）
-          </p>
-          <p style={{ margin: "6px 0" }}>
-            <b>影響力:</b> 城は自身とその上下左右のマスに、レベルと等しい「影響力」を投射する。
-          </p>
-          <p style={{ margin: "6px 0" }}>
-            <b>支配:</b> 各マスは合計影響力が高いプレイヤーが支配する。同値は中立。
-          </p>
-          <p style={{ margin: "6px 0" }}>
-            <b>捕獲:</b> 相手に支配されたマスの上にある城は即座に破壊される。連鎖あり。
-          </p>
-          <p style={{ margin: "6px 0" }}>
-            <b>閉門 🚪:</b> 城のある位置で敵の影響力と拮抗（同値）している場合、門が閉じた状態で表示される。あと一押しで落城する危険信号。
-          </p>
-          <p style={{ margin: "6px 0", fontSize: 11, opacity: 0.6 }}>
-            マス左下の<span style={{
-              color: SCREEN_BLACK,
-              background: BOARD_GREEN,
-              padding: "0 4px",
-            }}>黒数字</span>=あなたの影響力、
-            右下の<span style={{color:PAPER_WHITE, textShadow:`1px 1px 0 ${SCREEN_BLACK}`}}>白数字</span>=CPUの影響力
-          </p>
-        </div>
-      )}
     </div>
   );
 }
