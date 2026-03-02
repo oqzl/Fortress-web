@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 
 // ── Game Constants ──
 const BOARD_SIZE = 6;
@@ -379,7 +379,43 @@ export default function FortressGame() {
   const [firstPlayer, setFirstPlayer] = useState(PLAYER);
   const [showRules, setShowRules] = useState(false);
   const [turnNotice, setTurnNotice] = useState(null);
+  const closeRulesButtonRef = useRef(null);
+  const previousFocusRef = useRef(null);
   const cellSize = useCellSize();
+
+  useEffect(() => {
+    if (!showRules) return;
+    previousFocusRef.current = document.activeElement;
+    closeRulesButtonRef.current?.focus();
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setShowRules(false);
+        return;
+      }
+      if (e.key === "Tab") {
+        const dialog = closeRulesButtonRef.current?.closest('[role="dialog"]');
+        if (!dialog) return;
+        const focusable = Array.from(
+          dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        ).filter(el => !el.disabled);
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+          if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previousFocusRef.current && document.contains(previousFocusRef.current)) {
+        previousFocusRef.current.focus();
+      }
+    };
+  }, [showRules]);
 
   const strengthMap = useMemo(() => calcStrength(board), [board]);
   const controlMap = useMemo(() => calcControl(strengthMap), [strengthMap]);
@@ -673,7 +709,11 @@ export default function FortressGame() {
         </div>
 
         {showRules && (
-          <div style={{
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rules-dialog-title"
+            style={{
             position: "absolute",
             inset: 0,
             display: "flex",
@@ -703,6 +743,7 @@ export default function FortressGame() {
             onClick={(e) => e.stopPropagation()}
             >
               <button
+                ref={closeRulesButtonRef}
                 onClick={() => setShowRules(false)}
                 style={{
                   ...btnStyle,
@@ -718,7 +759,7 @@ export default function FortressGame() {
               >
                 ×
               </button>
-              <div style={{ fontWeight: 700, color: PAPER_WHITE, marginBottom: 6, letterSpacing: 2, fontSize: 14 }}>
+              <div id="rules-dialog-title" style={{ fontWeight: 700, color: PAPER_WHITE, marginBottom: 6, letterSpacing: 2, fontSize: 14 }}>
                 RULES
               </div>
               <p style={{ margin: "6px 0" }}>
