@@ -434,6 +434,20 @@ export default function FortressGame() {
     return m ? m.type : null;
   }, [validMoves]);
 
+  const clearHoveredCell = useCallback(() => {
+    setHoveredCell(null);
+  }, []);
+
+  const handleCellPointerEnter = useCallback((event, r, c) => {
+    if (event.pointerType !== "mouse") return;
+    if (showRules || gameOver || currentPlayer !== PLAYER || aiThinking) return;
+    setHoveredCell({ r, c });
+  }, [showRules, gameOver, currentPlayer, aiThinking]);
+
+  useEffect(() => {
+    clearHoveredCell();
+  }, [board, currentPlayer, aiThinking, showRules, gameOver, clearHoveredCell]);
+
   const endTurn = useCallback((newBoard, nextTurn) => {
     if (nextTurn > MAX_TURNS) {
       const t = countTiles(newBoard);
@@ -452,6 +466,7 @@ export default function FortressGame() {
 
     const moveType = getMoveType(r, c);
     const move = { type: moveType, r, c };
+    clearHoveredCell();
     const newBoard = applyMove(board, move, PLAYER);
     setBoard(newBoard);
     setLastMove({ r, c, who: PLAYER });
@@ -463,7 +478,7 @@ export default function FortressGame() {
       setCurrentPlayer(AI);
       setAiThinking(true);
     }
-  }, [board, turn, showRules, gameOver, currentPlayer, aiThinking, isValidMove, getMoveType, endTurn]);
+  }, [board, turn, showRules, gameOver, currentPlayer, aiThinking, isValidMove, getMoveType, endTurn, clearHoveredCell]);
 
   // AI turn
   useEffect(() => {
@@ -471,6 +486,7 @@ export default function FortressGame() {
     const timer = setTimeout(() => {
       const turnsLeft = MAX_TURNS - turn + 1;
       const move = aiChooseMove(board, turnsLeft, difficulty);
+      clearHoveredCell();
       if (move) {
         const newBoard = applyMove(board, move, AI);
         setBoard(newBoard);
@@ -492,7 +508,7 @@ export default function FortressGame() {
       setAiThinking(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [showRules, currentPlayer, gameOver, aiThinking, board, turn, difficulty, endTurn]);
+  }, [showRules, currentPlayer, gameOver, aiThinking, board, turn, difficulty, endTurn, clearHoveredCell]);
 
   useEffect(() => {
     if (showRules || currentPlayer !== PLAYER || gameOver || aiThinking || validMoves.length > 0) return;
@@ -518,6 +534,7 @@ export default function FortressGame() {
   }, [showRules, turn, currentPlayer, aiThinking, gameOver]);
 
   const resetGame = useCallback((first = PLAYER) => {
+    clearHoveredCell();
     setBoard(createEmptyBoard());
     setTurn(1);
     setCurrentPlayer(first);
@@ -527,7 +544,7 @@ export default function FortressGame() {
     setLastMove(null);
     setAiThinking(false);
     setTurnNotice(null);
-  }, []);
+  }, [clearHoveredCell]);
 
   const totalTurns = MAX_TURNS;
 
@@ -616,7 +633,9 @@ export default function FortressGame() {
           gridTemplateColumns: `repeat(${BOARD_SIZE}, ${cellSize.width}px)`,
           gridAutoRows: `${cellSize.height}px`,
           gap: BOARD_GRID_GAP,
-        }}>
+        }}
+        onPointerLeave={clearHoveredCell}
+        >
           {board.map((row, r) =>
             row.map((cell, c) => {
               const ctrl = controlMap[r][c];
@@ -650,8 +669,8 @@ export default function FortressGame() {
                 <div
                   key={`${r}-${c}`}
                   onClick={() => handleClick(r, c)}
-                  onMouseEnter={() => setHoveredCell({ r, c })}
-                  onMouseLeave={() => setHoveredCell(null)}
+                  onPointerEnter={(event) => handleCellPointerEnter(event, r, c)}
+                  onPointerLeave={clearHoveredCell}
                   style={{
                     background: bg,
                     border,
