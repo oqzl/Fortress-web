@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 
 // ── Game Constants ──
 const BOARD_SIZE = 7;
@@ -420,7 +420,6 @@ export default function FortressGame() {
   }, []);
 
   const totalTurns = MAX_TURNS;
-  const playerTurnNum = Math.ceil(turn / 2);
 
   return (
     <div style={{
@@ -587,6 +586,10 @@ export default function FortressGame() {
           }}>
             {result === "win" ? "🏆 YOU WIN!" : result === "lose" ? "DEFEAT" : "DRAW"}
             {" "}({tiles.player} vs {tiles.ai})
+          </span>
+        ) : aiThinking && turnNotice ? (
+          <span style={{ opacity: 0.75 }}>
+            {turnNotice} CPU is thinking...
           </span>
         ) : aiThinking ? (
           <span style={{ opacity: 0.6, fontStyle: "italic" }}>
