@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 
 // ── Game Constants ──
-const BOARD_SIZE = 7;
+const BOARD_SIZE = 6;
 const MAX_TURNS = 21;
 const MAX_LEVEL = 3;
 const PLAYER = 1;   // Human
@@ -224,8 +224,8 @@ function aiChooseMove(board, turnsLeft, difficulty) {
 // ── Castle SVG ──
 function CastleSVG({ level, owner, size = 36, gatesClosed = false }) {
   const colors = owner === PLAYER
-    ? { wall: "#3b5998", roof: "#1a3a6b", flag: "#e74c3c", stone: "#5577bb", gate: "#1a1a2e" }
-    : { wall: "#8b4513", roof: "#5a2d0c", flag: "#2ecc71", stone: "#a0633c", gate: "#1a1a2e" };
+    ? { wall: "#3b5998", roof: "#1a3a6b", flag: "#6ea8fe", stone: "#5577bb", gate: "#1a1a2e" }
+    : { wall: "#8b4513", roof: "#5a2d0c", flag: "#f87171", stone: "#a0633c", gate: "#1a1a2e" };
 
   const gateColor = gatesClosed ? (owner === PLAYER ? "#2a4070" : "#6b3a1a") : colors.gate;
 
@@ -267,6 +267,23 @@ function CastleSVG({ level, owner, size = 36, gatesClosed = false }) {
         <line x1="20" y1="1" x2="20" y2="-3" stroke="#333" strokeWidth="0.6" />
         <polygon points="20,-3 26,-1.5 20,0" fill={colors.flag} />
       </>}
+    </svg>
+  );
+}
+
+function TerritoryFlagSVG({ owner, size = 20 }) {
+  const colors = owner === PLAYER
+    ? { pole: "#d7dbe8", flag: "#6ea8fe", trim: "#dbeafe" }
+    : { pole: "#e8d7b8", flag: "#f87171", trim: "#fee2e2" };
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" shapeRendering="crispEdges">
+      <rect x="8" y="3" width="2" height="13" fill={colors.pole} />
+      <rect x="10" y="4" width="6" height="2" fill={colors.flag} />
+      <rect x="10" y="6" width="5" height="2" fill={colors.flag} />
+      <rect x="10" y="8" width="4" height="2" fill={colors.flag} />
+      <rect x="10" y="4" width="1" height="6" fill={colors.trim} />
+      <rect x="7" y="16" width="4" height="2" fill={colors.pole} />
     </svg>
   );
 }
@@ -539,6 +556,11 @@ export default function FortressGame() {
                   {cell.castle !== 0 && (
                     <CastleSVG level={cell.level} owner={cell.castle}
                       size={Math.round(cellSize * 0.68)} gatesClosed={gatesClosed} />
+                  )}
+                  {cell.castle === 0 && ctrl !== 0 && (
+                    <div style={{ opacity: 0.85, transform: "translateY(-2px)" }}>
+                      <TerritoryFlagSVG owner={ctrl} size={Math.round(cellSize * 0.42)} />
+                    </div>
                   )}
                   {cell.castle === 0 && canAct && isHovered && (
                     <div style={{ opacity: 0.3 }}>
