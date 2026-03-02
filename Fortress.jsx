@@ -594,7 +594,7 @@ export default function FortressGame() {
               const gatesClosed = cell.castle !== 0 && ctrl === 0
                 && strengthMap[r][c][cell.castle === PLAYER ? 1 : 0] > 0
                 && strengthMap[r][c][cell.castle === PLAYER ? 1 : 0]
-                   >= strengthMap[r][c][cell.castle === PLAYER ? 0 : 1];
+                   === strengthMap[r][c][cell.castle === PLAYER ? 0 : 1];
 
               const bg = BOARD_GREEN;
               const closedGateBorder = cell.castle === PLAYER
