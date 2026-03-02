@@ -9,9 +9,9 @@ const AI = 2;        // Computer
 const SCREEN_BLACK = "#050505";
 const BOARD_GREEN = "#20e000";
 const PAPER_WHITE = "#f5f5f5";
-const MIN_CELL_SIZE = 32;
 const MAX_CELL_HEIGHT = 60;
 const MAX_CELL_WIDTH = 96;
+const CELL_ASPECT_RATIO = 1.5;
 const BOARD_FRAME_PADDING = 4;
 const BOARD_FRAME_BORDER = 2;
 const BOARD_GRID_GAP = 0;
@@ -337,15 +337,23 @@ function useCellSize() {
       const totalGridGap = (BOARD_SIZE - 1) * BOARD_GRID_GAP;
       const usableBoardW = Math.max(0, maxBoardW - boardFrame - totalGridGap);
       const usableBoardH = Math.max(0, maxBoardH - boardFrame - totalGridGap);
-      const maxCellHeight = Math.min(MAX_CELL_HEIGHT, Math.floor(usableBoardH / BOARD_SIZE));
-      const maxCellWidthFromBoard = Math.floor(usableBoardW / BOARD_SIZE);
+      const maxCellWidthFromBoard = Math.max(1, Math.floor(usableBoardW / BOARD_SIZE));
+      const maxCellHeightFromBoard = Math.max(1, Math.floor(usableBoardH / BOARD_SIZE));
       const cellHeight = Math.max(
-        MIN_CELL_SIZE,
-        Math.min(maxCellHeight, Math.floor(maxCellWidthFromBoard / 1.5))
+        1,
+        Math.min(
+          MAX_CELL_HEIGHT,
+          maxCellHeightFromBoard,
+          Math.floor(maxCellWidthFromBoard / CELL_ASPECT_RATIO)
+        )
       );
       const cellWidth = Math.max(
-        MIN_CELL_SIZE,
-        Math.max(cellHeight, Math.min(MAX_CELL_WIDTH, Math.floor(cellHeight * 1.5)))
+        1,
+        Math.min(
+          MAX_CELL_WIDTH,
+          maxCellWidthFromBoard,
+          Math.floor(cellHeight * CELL_ASPECT_RATIO)
+        )
       );
       setSize({ width: cellWidth, height: cellHeight });
     }
