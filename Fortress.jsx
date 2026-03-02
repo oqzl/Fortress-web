@@ -6,6 +6,9 @@ const MAX_TURNS = 21;
 const MAX_LEVEL = 3;
 const PLAYER = 1;   // Human
 const AI = 2;        // Computer
+const SCREEN_BLACK = "#050505";
+const BOARD_GREEN = "#20e000";
+const PAPER_WHITE = "#f5f5f5";
 
 // ── Helper: create empty board ──
 function createEmptyBoard() {
@@ -272,58 +275,50 @@ function aiChooseMove(board, turnsLeft, difficulty) {
 
 // ── Castle SVG ──
 function CastleSVG({ level, owner, size = 36, gatesClosed = false }) {
-  const colors = owner === PLAYER
-    ? { wall: "#3b5998", roof: "#1a3a6b", flag: "#6ea8fe", stone: "#5577bb", gate: "#1a1a2e" }
-    : { wall: "#8b4513", roof: "#5a2d0c", flag: "#f87171", stone: "#a0633c", gate: "#1a1a2e" };
-
-  const gateColor = gatesClosed ? (owner === PLAYER ? "#2a4070" : "#6b3a1a") : colors.gate;
+  const fill = owner === PLAYER ? SCREEN_BLACK : PAPER_WHITE;
+  const cutout = BOARD_GREEN;
+  const gateBar = owner === PLAYER ? PAPER_WHITE : SCREEN_BLACK;
 
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40">
-      {/* Base / Level 1 */}
-      <rect x="8" y="24" width="24" height="12" rx="1" fill={colors.wall} stroke="#222" strokeWidth="0.8" />
-      {/* Gates */}
-      <rect x="10" y="30" width="4" height="6" rx="0.5" fill={gateColor} />
-      <rect x="26" y="30" width="4" height="6" rx="0.5" fill={gateColor} />
-      {/* Gate bars when closed */}
+    <svg width={size} height={size} viewBox="0 0 40 40" shapeRendering="crispEdges" aria-hidden="true" focusable="false">
+      <rect x="4" y="22" width="10" height="10" fill={fill} />
+      <rect x="26" y="22" width="10" height="10" fill={fill} />
+      <rect x="10" y="24" width="20" height="8" fill={fill} />
+      <rect x="8" y="20" width="3" height="4" fill={fill} />
+      <rect x="13" y="20" width="3" height="4" fill={fill} />
+      <rect x="24" y="20" width="3" height="4" fill={fill} />
+      <rect x="29" y="20" width="3" height="4" fill={fill} />
+      <rect x="17" y="27" width="6" height="5" fill={cutout} />
+
       {gatesClosed && <>
-        <line x1="10" y1="31" x2="14" y2="31" stroke="#c0a050" strokeWidth="0.7" />
-        <line x1="10" y1="33" x2="14" y2="33" stroke="#c0a050" strokeWidth="0.7" />
-        <line x1="10" y1="35" x2="14" y2="35" stroke="#c0a050" strokeWidth="0.7" />
-        <line x1="26" y1="31" x2="30" y2="31" stroke="#c0a050" strokeWidth="0.7" />
-        <line x1="26" y1="33" x2="30" y2="33" stroke="#c0a050" strokeWidth="0.7" />
-        <line x1="26" y1="35" x2="30" y2="35" stroke="#c0a050" strokeWidth="0.7" />
+        <rect x="17" y="27" width="6" height="1" fill={gateBar} />
+        <rect x="17" y="29" width="6" height="1" fill={gateBar} />
       </>}
-      {/* Battlements */}
-      {[8,12,16,20,24,28].map((x,i) => (
-        <rect key={i} x={x} y="22" width="3" height="4" fill={colors.wall} stroke="#222" strokeWidth="0.5" />
-      ))}
 
       {level >= 2 && <>
-        {/* Tower */}
-        <rect x="13" y="14" width="14" height="12" rx="1" fill={colors.stone} stroke="#222" strokeWidth="0.8" />
-        <rect x="17" y="20" width="6" height="6" rx="0.5" fill="#1a1a2e" />
-        {[13,17,21,25].map((x,i) => (
-          <rect key={`t${i}`} x={x} y="12" width="2.5" height="3.5" fill={colors.stone} stroke="#222" strokeWidth="0.5" />
-        ))}
+        <rect x="14" y="12" width="12" height="12" fill={fill} />
+        <rect x="15" y="10" width="2" height="3" fill={fill} />
+        <rect x="19" y="10" width="2" height="3" fill={fill} />
+        <rect x="23" y="10" width="2" height="3" fill={fill} />
+        <rect x="17" y="16" width="2" height="3" fill={cutout} />
+        <rect x="21" y="16" width="2" height="3" fill={cutout} />
       </>}
 
       {level >= 3 && <>
-        {/* Keep + Roof */}
-        <rect x="16" y="6" width="8" height="9" rx="1" fill={colors.roof} stroke="#222" strokeWidth="0.8" />
-        <polygon points="16,6 20,1 24,6" fill={colors.roof} stroke="#222" strokeWidth="0.7" />
-        {/* Flag */}
-        <line x1="20" y1="1" x2="20" y2="-3" stroke="#333" strokeWidth="0.6" />
-        <polygon points="20,-3 26,-1.5 20,0" fill={colors.flag} />
+        <rect x="17" y="4" width="6" height="9" fill={fill} />
+        <rect x="16" y="6" width="1" height="1" fill={fill} />
+        <rect x="23" y="6" width="1" height="1" fill={fill} />
+        <rect x="19" y="1" width="1" height="4" fill={fill} />
+        <rect x="20" y="1" width="1" height="4" fill={fill} />
+        <rect x="21" y="2" width="5" height="1" fill={fill} />
+        <rect x="21" y="3" width="4" height="1" fill={fill} />
       </>}
     </svg>
   );
 }
 
 function TerritoryFlagSVG({ owner, size = 20 }) {
-  const colors = owner === PLAYER
-    ? { pole: "#d7dbe8", flag: "#6ea8fe", trim: "#dbeafe" }
-    : { pole: "#e8d7b8", flag: "#f87171", trim: "#fee2e2" };
+  const fill = owner === PLAYER ? SCREEN_BLACK : PAPER_WHITE;
 
   return (
     <svg
@@ -334,12 +329,11 @@ function TerritoryFlagSVG({ owner, size = 20 }) {
       aria-hidden="true"
       focusable="false"
     >
-      <rect x="8" y="3" width="2" height="13" fill={colors.pole} />
-      <rect x="10" y="4" width="6" height="2" fill={colors.flag} />
-      <rect x="10" y="6" width="5" height="2" fill={colors.flag} />
-      <rect x="10" y="8" width="4" height="2" fill={colors.flag} />
-      <rect x="10" y="4" width="1" height="6" fill={colors.trim} />
-      <rect x="7" y="16" width="4" height="2" fill={colors.pole} />
+      <rect x="7" y="2" width="2" height="14" fill={fill} />
+      <rect x="9" y="4" width="6" height="2" fill={fill} />
+      <rect x="9" y="6" width="5" height="2" fill={fill} />
+      <rect x="9" y="8" width="4" height="2" fill={fill} />
+      <rect x="6" y="16" width="4" height="2" fill={fill} />
     </svg>
   );
 }
@@ -499,27 +493,33 @@ export default function FortressGame() {
       minHeight: "100vh",
       maxHeight: "100vh",
       overflow: "auto",
-      background: "linear-gradient(160deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%)",
+      background: SCREEN_BLACK,
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "flex-start",
       padding: "12px 16px",
-      fontFamily: "'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif",
-      color: "#e0d8c8",
+      fontFamily: "'Courier New', Courier, monospace",
+      color: PAPER_WHITE,
       boxSizing: "border-box"
     }}>
       {/* Title */}
-      <div style={{ textAlign: "center", marginBottom: 8 }}>
-        <h1 style={{
-          fontSize: 28,
-          fontWeight: 700,
-          letterSpacing: 8,
-          margin: 0,
-          color: "#d4a843",
-          textShadow: "0 2px 12px rgba(212,168,67,0.3)"
-        }}>FORTRESS</h1>
-        <div style={{ fontSize: 10, letterSpacing: 3, opacity: 0.5, marginTop: 1 }}>
+      <div style={{ textAlign: "center", marginBottom: 10 }}>
+        <div style={{
+          display: "inline-block",
+          padding: "10px 22px",
+          background: PAPER_WHITE,
+          color: SCREEN_BLACK,
+          marginBottom: 8,
+        }}>
+          <h1 style={{
+            fontSize: 28,
+            fontWeight: 700,
+            letterSpacing: 4,
+            margin: 0,
+          }}>FORTRESS</h1>
+        </div>
+        <div style={{ fontSize: 10, letterSpacing: 2, opacity: 0.8, marginTop: 1 }}>
           SSI · 1983 · JIM TEMPLEMAN · PATTY DENBROOK
         </div>
       </div>
@@ -530,36 +530,35 @@ export default function FortressGame() {
         fontSize: 13, opacity: 0.85
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 10, height: 10, borderRadius: 2, background: "#3b82f6" }} />
+          <div style={{ width: 10, height: 10, background: SCREEN_BLACK, border: `1px solid ${PAPER_WHITE}` }} />
           <span>YOU: {tiles.player}</span>
         </div>
         <div style={{
           padding: "3px 12px",
-          background: "rgba(212,168,67,0.15)",
-          borderRadius: 4,
-          border: "1px solid rgba(212,168,67,0.3)",
+          background: BOARD_GREEN,
+          color: SCREEN_BLACK,
+          border: `2px solid ${SCREEN_BLACK}`,
           fontVariantNumeric: "tabular-nums"
         }}>
           TURN {turn} / {totalTurns}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span>CPU: {tiles.ai}</span>
-          <div style={{ width: 10, height: 10, borderRadius: 2, background: "#d97706" }} />
+          <div style={{ width: 10, height: 10, background: PAPER_WHITE, border: `1px solid ${SCREEN_BLACK}` }} />
         </div>
       </div>
 
       {/* Board */}
       <div style={{
-        background: "rgba(0,0,0,0.35)",
-        borderRadius: 8,
-        padding: 8,
-        boxShadow: "0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)"
+        background: SCREEN_BLACK,
+        padding: 4,
+        border: `2px solid ${BOARD_GREEN}`,
       }}>
         <div style={{
           display: "grid",
           gridTemplateColumns: `repeat(${BOARD_SIZE}, ${cellSize}px)`,
           gridAutoRows: `${cellSize}px`,
-          gap: 2,
+          gap: 0,
         }}>
           {board.map((row, r) =>
             row.map((cell, c) => {
@@ -577,14 +576,12 @@ export default function FortressGame() {
                 && strengthMap[r][c][cell.castle === PLAYER ? 1 : 0]
                    >= strengthMap[r][c][cell.castle === PLAYER ? 0 : 1];
 
-              let bg = "rgba(60,60,80,0.4)";
-              if (ctrl === PLAYER) bg = "rgba(59,130,246,0.18)";
-              if (ctrl === AI) bg = "rgba(217,119,6,0.18)";
+              const bg = BOARD_GREEN;
 
-              let border = "1px solid rgba(255,255,255,0.06)";
-              if (gatesClosed) border = "1.5px dashed rgba(255,200,60,0.5)";
-              if (isLast) border = `2px solid ${lastMove.who === PLAYER ? "#3b82f6" : "#d97706"}`;
-              if (isHovered && canAct) border = "2px solid rgba(212,168,67,0.7)";
+              let border = `2px dashed ${SCREEN_BLACK}`;
+              if (gatesClosed) border = `2px dashed ${cell.castle === PLAYER ? PAPER_WHITE : SCREEN_BLACK}`;
+              if (isLast) border = `2px solid ${lastMove.who === PLAYER ? PAPER_WHITE : SCREEN_BLACK}`;
+              if (isHovered && canAct) border = `2px solid ${PAPER_WHITE}`;
 
               return (
                 <div
@@ -595,7 +592,6 @@ export default function FortressGame() {
                   style={{
                     background: bg,
                     border,
-                    borderRadius: 3,
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -603,10 +599,11 @@ export default function FortressGame() {
                     cursor: canAct ? "pointer" : "default",
                     position: "relative",
                     transition: "all 0.15s ease",
-                    transform: isHovered && canAct ? "scale(1.05)" : "scale(1)",
+                    boxSizing: "border-box",
+                    transform: isHovered && canAct ? "scale(1.02)" : "scale(1)",
                     boxShadow: isHovered && canAct
-                      ? "0 0 12px rgba(212,168,67,0.3)"
-                      : gatesClosed ? "inset 0 0 8px rgba(255,200,60,0.15)" : "none"
+                      ? `inset 0 0 0 2px ${PAPER_WHITE}`
+                      : gatesClosed ? `inset 0 0 0 2px ${cell.castle === PLAYER ? PAPER_WHITE : SCREEN_BLACK}` : "none"
                   }}
                 >
                   {cell.castle !== 0 && (
@@ -627,8 +624,7 @@ export default function FortressGame() {
                     <div style={{
                       position: "absolute", top: 2, right: 3,
                       fontSize: 14, fontWeight: 700,
-                      color: "#d4a843",
-                      textShadow: "0 1px 4px rgba(0,0,0,0.8)"
+                      color: cell.castle === PLAYER ? PAPER_WHITE : SCREEN_BLACK,
                     }}>↑</div>
                   )}
                   {/* Strength indicator */}
@@ -639,8 +635,8 @@ export default function FortressGame() {
                       padding: "0 3px", fontSize: 8, opacity: 0.45,
                       fontFamily: "monospace"
                     }}>
-                      <span style={{ color: "#6ea8fe" }}>{str1 || ""}</span>
-                      <span style={{ color: "#f0a040" }}>{str2 || ""}</span>
+                      <span style={{ color: SCREEN_BLACK }}>{str1 || ""}</span>
+                      <span style={{ color: PAPER_WHITE, textShadow: `1px 1px 0 ${SCREEN_BLACK}` }}>{str2 || ""}</span>
                     </div>
                   )}
                 </div>
@@ -659,7 +655,7 @@ export default function FortressGame() {
       }}>
         {gameOver ? (
           <span style={{
-            color: result === "win" ? "#4ade80" : result === "lose" ? "#f87171" : "#fbbf24",
+            color: PAPER_WHITE,
             fontWeight: 600, letterSpacing: 2, fontSize: 16
           }}>
             {result === "win" ? "🏆 YOU WIN!" : result === "lose" ? "DEFEAT" : "DRAW"}
@@ -694,8 +690,8 @@ export default function FortressGame() {
 
         {/* First player toggle */}
         <div style={{
-          display: "flex", borderRadius: 6, overflow: "hidden",
-          border: "1px solid rgba(255,255,255,0.15)"
+          display: "flex", overflow: "hidden",
+          border: `2px solid ${PAPER_WHITE}`
         }}>
           {[
             { val: PLAYER, label: "先手" },
@@ -703,8 +699,8 @@ export default function FortressGame() {
           ].map(({ val, label }) => (
             <button key={val} onClick={() => resetGame(val)} style={{
               ...btnStyle, border: "none", borderRadius: 0,
-              background: firstPlayer === val ? "rgba(212,168,67,0.25)" : "rgba(255,255,255,0.04)",
-              color: firstPlayer === val ? "#d4a843" : "#e0d8c8",
+              background: firstPlayer === val ? PAPER_WHITE : SCREEN_BLACK,
+              color: firstPlayer === val ? SCREEN_BLACK : PAPER_WHITE,
               padding: "6px 12px", fontSize: 11
             }}>{label}</button>
           ))}
@@ -712,8 +708,8 @@ export default function FortressGame() {
 
         {/* Difficulty selector */}
         <div style={{
-          display: "flex", borderRadius: 6, overflow: "hidden",
-          border: "1px solid rgba(255,255,255,0.15)"
+          display: "flex", overflow: "hidden",
+          border: `2px solid ${PAPER_WHITE}`
         }}>
           {[
             { val: "easy", label: "Easy", emoji: "🟢" },
@@ -723,14 +719,14 @@ export default function FortressGame() {
           ].map(({ val, label, emoji }) => (
             <button key={val} onClick={() => { setDifficulty(val); }} style={{
               ...btnStyle, border: "none", borderRadius: 0,
-              background: difficulty === val ? "rgba(212,168,67,0.25)" : "rgba(255,255,255,0.04)",
-              color: difficulty === val ? "#d4a843" : "#e0d8c8",
+              background: difficulty === val ? PAPER_WHITE : SCREEN_BLACK,
+              color: difficulty === val ? SCREEN_BLACK : PAPER_WHITE,
               padding: "6px 10px", fontSize: 11
             }}>{emoji} {label}</button>
           ))}
         </div>
 
-        <button onClick={() => setShowRules(s => !s)} style={{...btnStyle, background: "rgba(212,168,67,0.15)", borderColor: "rgba(212,168,67,0.4)"}}>
+        <button onClick={() => setShowRules(s => !s)} style={{...btnStyle, background: SCREEN_BLACK, borderColor: PAPER_WHITE}}>
           {showRules ? "HIDE" : "RULES"}
         </button>
       </div>
@@ -742,15 +738,14 @@ export default function FortressGame() {
           maxWidth: 440,
           maxHeight: "30vh",
           overflowY: "auto",
-          background: "rgba(0,0,0,0.4)",
-          border: "1px solid rgba(212,168,67,0.2)",
-          borderRadius: 8,
+          background: SCREEN_BLACK,
+          border: `2px solid ${PAPER_WHITE}`,
           padding: "14px 18px",
           fontSize: 13,
           lineHeight: 1.7,
-          color: "#c8c0b0"
+          color: PAPER_WHITE
         }}>
-          <div style={{ fontWeight: 700, color: "#d4a843", marginBottom: 6, letterSpacing: 2, fontSize: 14 }}>
+          <div style={{ fontWeight: 700, color: PAPER_WHITE, marginBottom: 6, letterSpacing: 2, fontSize: 14 }}>
             RULES
           </div>
           <p style={{ margin: "6px 0" }}>
@@ -778,8 +773,8 @@ export default function FortressGame() {
             <b>閉門 🚪:</b> 城のある位置で敵の影響力と拮抗（同値）している場合、門が閉じた状態で表示される。あと一押しで落城する危険信号。
           </p>
           <p style={{ margin: "6px 0", fontSize: 11, opacity: 0.6 }}>
-            マス左下の<span style={{color:"#6ea8fe"}}>青数字</span>=あなたの影響力、
-            右下の<span style={{color:"#f0a040"}}>橙数字</span>=CPUの影響力
+            マス左下の<span style={{color:SCREEN_BLACK}}>黒数字</span>=あなたの影響力、
+            右下の<span style={{color:PAPER_WHITE, textShadow:`1px 1px 0 ${SCREEN_BLACK}`}}>白数字</span>=CPUの影響力
           </p>
         </div>
       )}
@@ -789,11 +784,10 @@ export default function FortressGame() {
 
 const btnStyle = {
   padding: "8px 16px",
-  background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.15)",
-  borderRadius: 6,
-  color: "#e0d8c8",
-  fontFamily: "'Palatino Linotype', Georgia, serif",
+  background: SCREEN_BLACK,
+  border: `2px solid ${PAPER_WHITE}`,
+  color: PAPER_WHITE,
+  fontFamily: "'Courier New', Courier, monospace",
   fontSize: 12,
   letterSpacing: 1.5,
   cursor: "pointer",
