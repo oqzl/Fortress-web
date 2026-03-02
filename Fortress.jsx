@@ -447,7 +447,7 @@ export default function FortressGame() {
           textShadow: "0 2px 12px rgba(212,168,67,0.3)"
         }}>FORTRESS</h1>
         <div style={{ fontSize: 10, letterSpacing: 3, opacity: 0.5, marginTop: 1 }}>
-          SSI · 1983 · JIM TEMPLEMAN
+          SSI · 1983 · JIM TEMPLEMAN · PATTY DENBROOK
         </div>
       </div>
 
