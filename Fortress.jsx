@@ -9,9 +9,13 @@ const AI = 2;        // Computer
 const SCREEN_BLACK = "#050505";
 const BOARD_GREEN = "#20e000";
 const PAPER_WHITE = "#f5f5f5";
+const MIN_CELL_SIZE = 32;
+const MAX_CELL_HEIGHT = 60;
+const MAX_CELL_WIDTH = 96;
 const BOARD_FRAME_PADDING = 4;
 const BOARD_FRAME_BORDER = 2;
 const BOARD_GRID_GAP = 0;
+const HOVER_SCALE = BOARD_GRID_GAP > 0 ? 1.02 : 1;
 
 // ── Helper: create empty board ──
 function createEmptyBoard() {
@@ -352,12 +356,18 @@ function useCellSize() {
       const maxBoardH = vh - 260;      // reserve for header/footer UI
       const boardFrame = (BOARD_FRAME_PADDING + BOARD_FRAME_BORDER) * 2;
       const totalGridGap = (BOARD_SIZE - 1) * BOARD_GRID_GAP;
-      const usableBoardW = maxBoardW - boardFrame - totalGridGap;
-      const usableBoardH = maxBoardH - boardFrame - totalGridGap;
-      const maxCellHeight = Math.max(32, Math.min(60, Math.floor(usableBoardH / BOARD_SIZE)));
+      const usableBoardW = Math.max(0, maxBoardW - boardFrame - totalGridGap);
+      const usableBoardH = Math.max(0, maxBoardH - boardFrame - totalGridGap);
+      const maxCellHeight = Math.min(MAX_CELL_HEIGHT, Math.floor(usableBoardH / BOARD_SIZE));
       const maxCellWidthFromBoard = Math.floor(usableBoardW / BOARD_SIZE);
-      const cellHeight = Math.min(maxCellHeight, Math.floor(maxCellWidthFromBoard / 1.5));
-      const cellWidth = Math.max(cellHeight, Math.min(96, Math.floor(cellHeight * 1.5)));
+      const cellHeight = Math.max(
+        MIN_CELL_SIZE,
+        Math.min(maxCellHeight, Math.floor(maxCellWidthFromBoard / 1.5))
+      );
+      const cellWidth = Math.max(
+        MIN_CELL_SIZE,
+        Math.max(cellHeight, Math.min(MAX_CELL_WIDTH, Math.floor(cellHeight * 1.5)))
+      );
       setSize({ width: cellWidth, height: cellHeight });
     }
     calc();
@@ -615,7 +625,7 @@ export default function FortressGame() {
                     position: "relative",
                     transition: "all 0.15s ease",
                     boxSizing: "border-box",
-                    transform: isHovered && canAct ? "scale(1.02)" : "scale(1)",
+                    transform: isHovered && canAct ? `scale(${HOVER_SCALE})` : "scale(1)",
                     boxShadow: isHovered && canAct
                       ? `inset 0 0 0 2px ${PAPER_WHITE}`
                       : gatesClosed ? closedGateInset : "none"
