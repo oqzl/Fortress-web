@@ -158,7 +158,7 @@ function minimax(board, depth, alpha, beta, isAI, turnLeft, options = {}) {
     let maxScore = -Infinity;
     for (const candidate of candidates) {
       const move = candidate.move;
-      const newBoard = candidate.nextBoard ?? applyMove(board, move, AI);
+      const newBoard = applyMove(board, move, AI);
       const { score } = minimax(newBoard, depth - 1, alpha, beta, false, turnLeft - 1, options);
       if (score > maxScore) { maxScore = score; bestMove = move; }
       alpha = Math.max(alpha, score);
@@ -169,7 +169,7 @@ function minimax(board, depth, alpha, beta, isAI, turnLeft, options = {}) {
     let minScore = Infinity;
     for (const candidate of candidates) {
       const move = candidate.move;
-      const newBoard = candidate.nextBoard ?? applyMove(board, move, PLAYER);
+      const newBoard = applyMove(board, move, PLAYER);
       const { score } = minimax(newBoard, depth - 1, alpha, beta, true, turnLeft - 1, options);
       if (score < minScore) { minScore = score; bestMove = move; }
       beta = Math.min(beta, score);
@@ -179,24 +179,65 @@ function minimax(board, depth, alpha, beta, isAI, turnLeft, options = {}) {
   }
 }
 
+function scoreMoveHeuristic(board, move, who, strengthMap, controlMap) {
+  const opponent = who === PLAYER ? AI : PLAYER;
+  const ownIdx = who - 1;
+  const oppIdx = opponent - 1;
+  const center = (BOARD_SIZE - 1) / 2;
+  const affectedTiles = [[move.r, move.c], [move.r + 1, move.c], [move.r - 1, move.c], [move.r, move.c + 1], [move.r, move.c - 1]]
+    .filter(([r, c]) => r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE);
+
+  let score = 0;
+  if (move.type === "upgrade") {
+    score += 2 + board[move.r][move.c].level * 0.75;
+  } else if (controlMap[move.r][move.c] === who) {
+    score += 1.5;
+  } else if (controlMap[move.r][move.c] === 0) {
+    score += 1;
+  }
+
+  score += (BOARD_SIZE - (Math.abs(move.r - center) + Math.abs(move.c - center))) * 0.35;
+
+  for (const [r, c] of affectedTiles) {
+    const ownStrength = strengthMap[r][c][ownIdx];
+    const oppStrength = strengthMap[r][c][oppIdx];
+    const beforeMargin = ownStrength - oppStrength;
+    const afterMargin = beforeMargin + 1;
+    const targetCell = board[r][c];
+
+    if (beforeMargin <= 0 && afterMargin > 0) score += 2.5;
+    else if (beforeMargin < 0 && afterMargin === 0) score += 1.25;
+    else if (afterMargin > 0) score += 0.4;
+
+    if (targetCell.castle === opponent && afterMargin > 0) {
+      score += 3 + targetCell.level;
+    }
+
+    if (targetCell.castle === who && beforeMargin <= 0) {
+      score += 1.5;
+    }
+  }
+
+  return score;
+}
+
 function getCandidateMoves(board, who, maxMoves = Infinity) {
   const moves = getValidMoves(board, who);
   if (moves.length <= maxMoves) {
     return moves.map(move => ({ move }));
   }
 
+  const strengthMap = calcStrength(board);
+  const controlMap = calcControl(strengthMap);
+
   return moves
     .map(move => ({
       move,
-      nextBoard: applyMove(board, move, who),
-    }))
-    .map(candidate => ({
-      ...candidate,
-      score: evaluate(candidate.nextBoard),
+      score: scoreMoveHeuristic(board, move, who, strengthMap, controlMap),
     }))
     .sort((a, b) => who === AI ? b.score - a.score : a.score - b.score)
     .slice(0, maxMoves)
-    .map(({ move, nextBoard }) => ({ move, nextBoard }));
+    .map(({ move }) => ({ move }));
 }
 
 function aiChooseMove(board, turnsLeft, difficulty) {
@@ -285,7 +326,14 @@ function TerritoryFlagSVG({ owner, size = 20 }) {
     : { pole: "#e8d7b8", flag: "#f87171", trim: "#fee2e2" };
 
   return (
-    <svg width={size} height={size} viewBox="0 0 20 20" shapeRendering="crispEdges">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+      focusable="false"
+    >
       <rect x="8" y="3" width="2" height="13" fill={colors.pole} />
       <rect x="10" y="4" width="6" height="2" fill={colors.flag} />
       <rect x="10" y="6" width="5" height="2" fill={colors.flag} />
