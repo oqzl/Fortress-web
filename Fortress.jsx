@@ -235,7 +235,7 @@ function getCandidateMoves(board, who, maxMoves = Infinity) {
       move,
       score: scoreMoveHeuristic(board, move, who, strengthMap, controlMap),
     }))
-    .sort((a, b) => who === AI ? b.score - a.score : a.score - b.score)
+    .sort((a, b) => b.score - a.score)
     .slice(0, maxMoves)
     .map(({ move }) => ({ move }));
 }
