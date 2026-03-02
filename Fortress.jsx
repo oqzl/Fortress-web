@@ -338,8 +338,8 @@ function useCellSize() {
       const usableBoardW = Math.max(0, maxBoardW - boardFrame - totalGridGap);
       const usableBoardH = Math.max(0, maxBoardH - boardFrame - totalGridGap);
       const MIN_CELL_SIZE = 24;
-      const maxCellWidthFromBoard = Math.max(MIN_CELL_SIZE, Math.floor(usableBoardW / BOARD_SIZE));
-      const maxCellHeightFromBoard = Math.max(MIN_CELL_SIZE, Math.floor(usableBoardH / BOARD_SIZE));
+      const maxCellWidthFromBoard = Math.floor(usableBoardW / BOARD_SIZE);
+      const maxCellHeightFromBoard = Math.floor(usableBoardH / BOARD_SIZE);
       const cellHeight = Math.max(
         MIN_CELL_SIZE,
         Math.min(
