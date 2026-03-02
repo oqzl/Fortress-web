@@ -150,14 +150,15 @@ function minimax(board, depth, alpha, beta, isAI, turnLeft, options = {}) {
   if (depth === 0 || turnLeft <= 0) return { score: evaluate(board), move: null };
   
   const who = isAI ? AI : PLAYER;
-  const moves = getCandidateMoves(board, who, options.maxBranching);
-  if (moves.length === 0) return { score: evaluate(board), move: null };
+  const candidates = getCandidateMoves(board, who, options.maxBranching);
+  if (candidates.length === 0) return { score: evaluate(board), move: null };
 
-  let bestMove = moves[0];
+  let bestMove = candidates[0].move;
   if (isAI) {
     let maxScore = -Infinity;
-    for (const move of moves) {
-      const newBoard = applyMove(board, move, AI);
+    for (const candidate of candidates) {
+      const move = candidate.move;
+      const newBoard = candidate.nextBoard ?? applyMove(board, move, AI);
       const { score } = minimax(newBoard, depth - 1, alpha, beta, false, turnLeft - 1, options);
       if (score > maxScore) { maxScore = score; bestMove = move; }
       alpha = Math.max(alpha, score);
@@ -166,8 +167,9 @@ function minimax(board, depth, alpha, beta, isAI, turnLeft, options = {}) {
     return { score: maxScore, move: bestMove };
   } else {
     let minScore = Infinity;
-    for (const move of moves) {
-      const newBoard = applyMove(board, move, PLAYER);
+    for (const candidate of candidates) {
+      const move = candidate.move;
+      const newBoard = candidate.nextBoard ?? applyMove(board, move, PLAYER);
       const { score } = minimax(newBoard, depth - 1, alpha, beta, true, turnLeft - 1, options);
       if (score < minScore) { minScore = score; bestMove = move; }
       beta = Math.min(beta, score);
@@ -179,16 +181,22 @@ function minimax(board, depth, alpha, beta, isAI, turnLeft, options = {}) {
 
 function getCandidateMoves(board, who, maxMoves = Infinity) {
   const moves = getValidMoves(board, who);
-  if (moves.length <= maxMoves) return moves;
+  if (moves.length <= maxMoves) {
+    return moves.map(move => ({ move }));
+  }
 
   return moves
     .map(move => ({
       move,
-      score: evaluate(applyMove(board, move, who)),
+      nextBoard: applyMove(board, move, who),
+    }))
+    .map(candidate => ({
+      ...candidate,
+      score: evaluate(candidate.nextBoard),
     }))
     .sort((a, b) => who === AI ? b.score - a.score : a.score - b.score)
     .slice(0, maxMoves)
-    .map(entry => entry.move);
+    .map(({ move, nextBoard }) => ({ move, nextBoard }));
 }
 
 function aiChooseMove(board, turnsLeft, difficulty) {
