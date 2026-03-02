@@ -9,6 +9,9 @@ const AI = 2;        // Computer
 const SCREEN_BLACK = "#050505";
 const BOARD_GREEN = "#20e000";
 const PAPER_WHITE = "#f5f5f5";
+const BOARD_FRAME_PADDING = 4;
+const BOARD_FRAME_BORDER = 2;
+const BOARD_GRID_GAP = 0;
 
 // ── Helper: create empty board ──
 function createEmptyBoard() {
@@ -281,13 +284,13 @@ function CastleSVG({ level, owner, size = 36, gatesClosed = false }) {
 
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" shapeRendering="crispEdges" aria-hidden="true" focusable="false">
-      <rect x="4" y="22" width="10" height="10" fill={fill} />
-      <rect x="26" y="22" width="10" height="10" fill={fill} />
+      <rect x="6" y="22" width="6" height="10" fill={fill} />
+      <rect x="28" y="22" width="6" height="10" fill={fill} />
       <rect x="10" y="24" width="20" height="8" fill={fill} />
-      <rect x="8" y="20" width="3" height="4" fill={fill} />
-      <rect x="13" y="20" width="3" height="4" fill={fill} />
-      <rect x="24" y="20" width="3" height="4" fill={fill} />
-      <rect x="29" y="20" width="3" height="4" fill={fill} />
+      <rect x="5" y="20" width="2" height="3" fill={fill} />
+      <rect x="9" y="20" width="2" height="3" fill={fill} />
+      <rect x="29" y="20" width="2" height="3" fill={fill} />
+      <rect x="33" y="20" width="2" height="3" fill={fill} />
       <rect x="17" y="27" width="6" height="5" fill={cutout} />
 
       {gatesClosed && <>
@@ -296,22 +299,22 @@ function CastleSVG({ level, owner, size = 36, gatesClosed = false }) {
       </>}
 
       {level >= 2 && <>
-        <rect x="14" y="12" width="12" height="12" fill={fill} />
-        <rect x="15" y="10" width="2" height="3" fill={fill} />
+        <rect x="15" y="12" width="10" height="12" fill={fill} />
+        <rect x="13" y="14" width="2" height="10" fill={fill} />
+        <rect x="25" y="14" width="2" height="10" fill={fill} />
+        <rect x="14" y="10" width="2" height="3" fill={fill} />
         <rect x="19" y="10" width="2" height="3" fill={fill} />
-        <rect x="23" y="10" width="2" height="3" fill={fill} />
-        <rect x="17" y="16" width="2" height="3" fill={cutout} />
-        <rect x="21" y="16" width="2" height="3" fill={cutout} />
+        <rect x="24" y="10" width="2" height="3" fill={fill} />
       </>}
 
       {level >= 3 && <>
-        <rect x="17" y="4" width="6" height="9" fill={fill} />
-        <rect x="16" y="6" width="1" height="1" fill={fill} />
-        <rect x="23" y="6" width="1" height="1" fill={fill} />
-        <rect x="19" y="1" width="1" height="4" fill={fill} />
-        <rect x="20" y="1" width="1" height="4" fill={fill} />
-        <rect x="21" y="2" width="5" height="1" fill={fill} />
-        <rect x="21" y="3" width="4" height="1" fill={fill} />
+        <rect x="17" y="5" width="6" height="9" fill={fill} />
+        <rect x="16" y="4" width="8" height="2" fill={fill} />
+        <rect x="18" y="3" width="4" height="1" fill={fill} />
+        <rect x="20" y="0" width="1" height="2" fill={fill} />
+        <rect x="20" y="-3" width="1" height="4" fill={fill} />
+        <rect x="21" y="1" width="5" height="1" fill={fill} />
+        <rect x="21" y="2" width="3" height="1" fill={fill} />
       </>}
     </svg>
   );
@@ -340,16 +343,22 @@ function TerritoryFlagSVG({ owner, size = 20 }) {
 
 // ── Hook: responsive cell size ──
 function useCellSize() {
-  const [size, setSize] = useState(56);
+  const [size, setSize] = useState({ width: 64, height: 56 });
   useEffect(() => {
     function calc() {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       const maxBoardW = vw - 48;       // horizontal padding
       const maxBoardH = vh - 260;      // reserve for header/footer UI
-      const maxFromW = Math.floor((maxBoardW - (BOARD_SIZE - 1) * 2 - 16) / BOARD_SIZE);
-      const maxFromH = Math.floor((maxBoardH - (BOARD_SIZE - 1) * 2 - 16) / BOARD_SIZE);
-      setSize(Math.max(32, Math.min(60, maxFromW, maxFromH)));
+      const boardFrame = (BOARD_FRAME_PADDING + BOARD_FRAME_BORDER) * 2;
+      const totalGridGap = (BOARD_SIZE - 1) * BOARD_GRID_GAP;
+      const usableBoardW = maxBoardW - boardFrame - totalGridGap;
+      const usableBoardH = maxBoardH - boardFrame - totalGridGap;
+      const maxCellHeight = Math.max(32, Math.min(60, Math.floor(usableBoardH / BOARD_SIZE)));
+      const maxCellWidthFromBoard = Math.floor(usableBoardW / BOARD_SIZE);
+      const cellHeight = Math.min(maxCellHeight, Math.floor(maxCellWidthFromBoard / 1.5));
+      const cellWidth = Math.max(cellHeight, Math.min(96, Math.floor(cellHeight * 1.5)));
+      setSize({ width: cellWidth, height: cellHeight });
     }
     calc();
     window.addEventListener("resize", calc);
@@ -551,14 +560,14 @@ export default function FortressGame() {
       {/* Board */}
       <div style={{
         background: SCREEN_BLACK,
-        padding: 4,
-        border: `2px solid ${BOARD_GREEN}`,
+        padding: BOARD_FRAME_PADDING,
+        border: `${BOARD_FRAME_BORDER}px solid ${BOARD_GREEN}`,
       }}>
         <div style={{
           display: "grid",
-          gridTemplateColumns: `repeat(${BOARD_SIZE}, ${cellSize}px)`,
-          gridAutoRows: `${cellSize}px`,
-          gap: 0,
+          gridTemplateColumns: `repeat(${BOARD_SIZE}, ${cellSize.width}px)`,
+          gridAutoRows: `${cellSize.height}px`,
+          gap: BOARD_GRID_GAP,
         }}>
           {board.map((row, r) =>
             row.map((cell, c) => {
@@ -577,9 +586,15 @@ export default function FortressGame() {
                    >= strengthMap[r][c][cell.castle === PLAYER ? 0 : 1];
 
               const bg = BOARD_GREEN;
+              const closedGateBorder = cell.castle === PLAYER
+                ? `2px dashed ${PAPER_WHITE}`
+                : `2px dotted ${PAPER_WHITE}`;
+              const closedGateInset = cell.castle === PLAYER
+                ? `inset 0 0 0 2px ${PAPER_WHITE}`
+                : `inset 0 0 0 2px ${PAPER_WHITE}, inset 0 0 0 4px ${SCREEN_BLACK}`;
 
               let border = `2px dashed ${SCREEN_BLACK}`;
-              if (gatesClosed) border = `2px dashed ${cell.castle === PLAYER ? PAPER_WHITE : SCREEN_BLACK}`;
+              if (gatesClosed) border = closedGateBorder;
               if (isLast) border = `2px solid ${lastMove.who === PLAYER ? PAPER_WHITE : SCREEN_BLACK}`;
               if (isHovered && canAct) border = `2px solid ${PAPER_WHITE}`;
 
@@ -603,21 +618,21 @@ export default function FortressGame() {
                     transform: isHovered && canAct ? "scale(1.02)" : "scale(1)",
                     boxShadow: isHovered && canAct
                       ? `inset 0 0 0 2px ${PAPER_WHITE}`
-                      : gatesClosed ? `inset 0 0 0 2px ${cell.castle === PLAYER ? PAPER_WHITE : SCREEN_BLACK}` : "none"
+                      : gatesClosed ? closedGateInset : "none"
                   }}
                 >
                   {cell.castle !== 0 && (
                     <CastleSVG level={cell.level} owner={cell.castle}
-                      size={Math.round(cellSize * 0.68)} gatesClosed={gatesClosed} />
+                      size={Math.round(Math.min(cellSize.width, cellSize.height) * 0.68)} gatesClosed={gatesClosed} />
                   )}
                   {cell.castle === 0 && ctrl !== 0 && (
                     <div style={{ opacity: 0.85, transform: "translateY(-2px)" }}>
-                      <TerritoryFlagSVG owner={ctrl} size={Math.round(cellSize * 0.42)} />
+                      <TerritoryFlagSVG owner={ctrl} size={Math.round(Math.min(cellSize.width, cellSize.height) * 0.42)} />
                     </div>
                   )}
                   {cell.castle === 0 && canAct && isHovered && (
                     <div style={{ opacity: 0.3 }}>
-                      <CastleSVG level={1} owner={PLAYER} size={Math.round(cellSize * 0.54)} />
+                      <CastleSVG level={1} owner={PLAYER} size={Math.round(Math.min(cellSize.width, cellSize.height) * 0.54)} />
                     </div>
                   )}
                   {cell.castle !== 0 && moveType === "upgrade" && isHovered && (
@@ -773,7 +788,11 @@ export default function FortressGame() {
             <b>閉門 🚪:</b> 城のある位置で敵の影響力と拮抗（同値）している場合、門が閉じた状態で表示される。あと一押しで落城する危険信号。
           </p>
           <p style={{ margin: "6px 0", fontSize: 11, opacity: 0.6 }}>
-            マス左下の<span style={{color:SCREEN_BLACK}}>黒数字</span>=あなたの影響力、
+            マス左下の<span style={{
+              color: SCREEN_BLACK,
+              background: BOARD_GREEN,
+              padding: "0 4px",
+            }}>黒数字</span>=あなたの影響力、
             右下の<span style={{color:PAPER_WHITE, textShadow:`1px 1px 0 ${SCREEN_BLACK}`}}>白数字</span>=CPUの影響力
           </p>
         </div>
