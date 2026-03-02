@@ -146,11 +146,11 @@ function evaluate(board) {
 }
 
 // ── AI: minimax with alpha-beta ──
-function minimax(board, depth, alpha, beta, isAI, turnLeft) {
+function minimax(board, depth, alpha, beta, isAI, turnLeft, options = {}) {
   if (depth === 0 || turnLeft <= 0) return { score: evaluate(board), move: null };
   
   const who = isAI ? AI : PLAYER;
-  const moves = getValidMoves(board, who);
+  const moves = getCandidateMoves(board, who, options.maxBranching);
   if (moves.length === 0) return { score: evaluate(board), move: null };
 
   let bestMove = moves[0];
@@ -158,7 +158,7 @@ function minimax(board, depth, alpha, beta, isAI, turnLeft) {
     let maxScore = -Infinity;
     for (const move of moves) {
       const newBoard = applyMove(board, move, AI);
-      const { score } = minimax(newBoard, depth - 1, alpha, beta, false, turnLeft - 1);
+      const { score } = minimax(newBoard, depth - 1, alpha, beta, false, turnLeft - 1, options);
       if (score > maxScore) { maxScore = score; bestMove = move; }
       alpha = Math.max(alpha, score);
       if (beta <= alpha) break;
@@ -168,13 +168,27 @@ function minimax(board, depth, alpha, beta, isAI, turnLeft) {
     let minScore = Infinity;
     for (const move of moves) {
       const newBoard = applyMove(board, move, PLAYER);
-      const { score } = minimax(newBoard, depth - 1, alpha, beta, true, turnLeft - 1);
+      const { score } = minimax(newBoard, depth - 1, alpha, beta, true, turnLeft - 1, options);
       if (score < minScore) { minScore = score; bestMove = move; }
       beta = Math.min(beta, score);
       if (beta <= alpha) break;
     }
     return { score: minScore, move: bestMove };
   }
+}
+
+function getCandidateMoves(board, who, maxMoves = Infinity) {
+  const moves = getValidMoves(board, who);
+  if (moves.length <= maxMoves) return moves;
+
+  return moves
+    .map(move => ({
+      move,
+      score: evaluate(applyMove(board, move, who)),
+    }))
+    .sort((a, b) => who === AI ? b.score - a.score : a.score - b.score)
+    .slice(0, maxMoves)
+    .map(entry => entry.move);
 }
 
 function aiChooseMove(board, turnsLeft, difficulty) {
@@ -184,11 +198,11 @@ function aiChooseMove(board, turnsLeft, difficulty) {
   // Difficulty settings: { depth, blunderRate }
   // blunderRate = chance of picking a random (non-optimal) move
   const settings = {
-    easy:   { baseDepth: 1, maxDepth: 1, blunderRate: 0.40 },
-    normal: { baseDepth: 1, maxDepth: 2, blunderRate: 0.15 },
-    hard:   { baseDepth: 2, maxDepth: 3, blunderRate: 0.03 },
-    master: { baseDepth: 2, maxDepth: 4, blunderRate: 0 },
-  }[difficulty] || { baseDepth: 2, maxDepth: 3, blunderRate: 0.05 };
+    easy:   { baseDepth: 1, maxDepth: 1, blunderRate: 0.40, maxBranching: 10 },
+    normal: { baseDepth: 1, maxDepth: 2, blunderRate: 0.15, maxBranching: 12 },
+    hard:   { baseDepth: 2, maxDepth: 3, blunderRate: 0.03, maxBranching: 10 },
+    master: { baseDepth: 2, maxDepth: 4, blunderRate: 0, maxBranching: 8 },
+  }[difficulty] || { baseDepth: 2, maxDepth: 3, blunderRate: 0.05, maxBranching: 10 };
 
   // Blunder: pick a random move
   if (Math.random() < settings.blunderRate) {
@@ -201,7 +215,9 @@ function aiChooseMove(board, turnsLeft, difficulty) {
       ? settings.maxDepth
       : settings.baseDepth;
 
-  const { move } = minimax(board, depth, -Infinity, Infinity, true, turnsLeft);
+  const { move } = minimax(board, depth, -Infinity, Infinity, true, turnsLeft, {
+    maxBranching: settings.maxBranching,
+  });
   return move;
 }
 
@@ -288,6 +304,7 @@ export default function FortressGame() {
   const [difficulty, setDifficulty] = useState("normal");
   const [firstPlayer, setFirstPlayer] = useState(PLAYER);
   const [showRules, setShowRules] = useState(false);
+  const [turnNotice, setTurnNotice] = useState(null);
   const cellSize = useCellSize();
 
   const strengthMap = useMemo(() => calcStrength(board), [board]);
@@ -331,6 +348,7 @@ export default function FortressGame() {
 
     const nextTurn = turn + 1;
     if (!endTurn(newBoard, nextTurn)) {
+      setTurnNotice(null);
       setTurn(nextTurn);
       setCurrentPlayer(AI);
       setAiThinking(true);
@@ -349,18 +367,38 @@ export default function FortressGame() {
         setLastMove({ r: move.r, c: move.c, who: AI });
         const nextTurn = turn + 1;
         if (!endTurn(newBoard, nextTurn)) {
+          setTurnNotice(null);
           setTurn(nextTurn);
           setCurrentPlayer(PLAYER);
         }
       } else {
-        // AI has no valid moves, skip
-        setTurn(t => t + 1);
-        setCurrentPlayer(PLAYER);
+        const nextTurn = turn + 1;
+        if (!endTurn(board, nextTurn)) {
+          setTurn(nextTurn);
+          setCurrentPlayer(PLAYER);
+          setTurnNotice("CPU has no valid moves and passes.");
+        }
       }
       setAiThinking(false);
     }, 400);
     return () => clearTimeout(timer);
   }, [currentPlayer, gameOver, aiThinking, board, turn, difficulty, endTurn]);
+
+  useEffect(() => {
+    if (currentPlayer !== PLAYER || gameOver || aiThinking || validMoves.length > 0) return;
+
+    const timer = setTimeout(() => {
+      const nextTurn = turn + 1;
+      if (!endTurn(board, nextTurn)) {
+        setTurn(nextTurn);
+        setCurrentPlayer(AI);
+        setAiThinking(true);
+        setTurnNotice("You have no valid moves and must pass.");
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [currentPlayer, gameOver, aiThinking, validMoves, turn, board, endTurn]);
 
   // If firstPlayer is AI, trigger AI on game start
   useEffect(() => {
@@ -378,6 +416,7 @@ export default function FortressGame() {
     setResult(null);
     setLastMove(null);
     setAiThinking(false);
+    setTurnNotice(null);
   }, []);
 
   const totalTurns = MAX_TURNS;
@@ -552,6 +591,10 @@ export default function FortressGame() {
         ) : aiThinking ? (
           <span style={{ opacity: 0.6, fontStyle: "italic" }}>
             ⚔ CPU is thinking...
+          </span>
+        ) : turnNotice ? (
+          <span style={{ opacity: 0.75 }}>
+            {turnNotice}
           </span>
         ) : (
           <span style={{ opacity: 0.7 }}>
