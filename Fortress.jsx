@@ -379,10 +379,12 @@ export default function FortressGame() {
   const [showRules, setShowRules] = useState(false);
   const [turnNotice, setTurnNotice] = useState(null);
   const closeRulesButtonRef = useRef(null);
+  const previousFocusRef = useRef(null);
   const cellSize = useCellSize();
 
   useEffect(() => {
     if (!showRules) return;
+    previousFocusRef.current = document.activeElement;
     closeRulesButtonRef.current?.focus();
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
@@ -406,7 +408,12 @@ export default function FortressGame() {
       }
     };
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previousFocusRef.current && document.contains(previousFocusRef.current)) {
+        previousFocusRef.current.focus();
+      }
+    };
   }, [showRules]);
 
   const strengthMap = useMemo(() => calcStrength(board), [board]);
