@@ -115,7 +115,43 @@ button:disabled { opacity: 1; }
 @keyframes captureFlash { 0% { opacity: .82; } 28% { opacity: .08; } 50% { opacity: .62; } 100% { opacity: 0; } }
 @keyframes finishFlash { 0%, 20%, 40% { opacity: .62; } 10%, 30%, 55% { opacity: .08; } 100% { opacity: 0; } }
 
-.header { text-align: center; z-index: 1; }
+.header {
+  width: min(100%, 520px);
+  text-align: center;
+  z-index: 1;
+}
+.title-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.rules-icon-button {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #ffffffb8;
+  border-radius: 50%;
+  padding: 0;
+  background: #1a0c3dcc;
+  color: #fff;
+  box-shadow: 0 0 13px #45d9ff66, 0 2px 0 #09031d;
+  cursor: pointer;
+}
+.rules-icon-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rules-icon-button .rules-icon-dot { fill: currentColor; stroke: none; }
+.rules-icon-button:active { transform: translateY(2px) scale(.94); box-shadow: 0 0 8px #45d9ff55; }
+.rules-icon-button:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
 .eyebrow {
   display: inline-block;
   font-size: 9px;
@@ -611,6 +647,13 @@ button:disabled { opacity: 1; }
   box-shadow: 0 3px 0 #09031d;
 }
 .control { display: flex; flex-direction: column; gap: 2px; }
+.control-static strong {
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  line-height: 1;
+}
 .control label {
   color: #cbbff6;
   font-size: 7px;
@@ -643,22 +686,73 @@ button:disabled { opacity: 1; }
 }
 @keyframes primaryBeat { 50% { filter: brightness(1.22); } }
 
+.rules-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding:
+    calc(16px + env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right))
+    calc(16px + env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+  background: #070315dd;
+  backdrop-filter: blur(7px) saturate(1.2);
+  -webkit-backdrop-filter: blur(7px) saturate(1.2);
+  animation: modalFade .16s ease-out;
+}
+@keyframes modalFade { from { opacity: 0; } }
+
 .rules {
   width: min(100%, 520px);
   border: 2px solid #8f70ea;
   border-radius: 8px;
-  background: #160c35f5;
-  padding: 11px 13px;
+  background:
+    radial-gradient(circle at 80% 0%, #6d247355 0, transparent 38%),
+    linear-gradient(160deg, #251052, #13082f);
+  padding: 16px 16px 14px;
   color: #eee9ff;
-  font-size: 11px;
-  line-height: 1.55;
-  box-shadow: 0 7px 22px #0008;
+  font-size: 12px;
+  line-height: 1.58;
+  box-shadow: 0 14px 46px #000c, 0 0 32px #8058ff55;
 }
-.rules h2 { margin: 0 0 6px; color: var(--yellow); font-size: 14px; }
-.rules p { margin: 5px 0; }
-.rules ul { margin: 5px 0 5px 18px; padding: 0; }
+.rules-dialog {
+  position: relative;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  animation: modalPop .18s cubic-bezier(.2,.85,.25,1);
+}
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(.94) translateY(8px); }
+}
+.rules-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ffffff55;
+  border-radius: 50%;
+  padding: 0 0 2px;
+  background: #0e0627cc;
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.rules-close:active { transform: scale(.92); }
+.rules-close:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+.rules h2 { margin: 0 42px 8px 0; color: var(--yellow); font-size: 16px; }
+.rules p { margin: 7px 0; }
+.rules ul { margin: 7px 0 7px 18px; padding: 0; }
+.rules li { margin: 3px 0; }
 .rules li::marker { color: var(--bird); }
-.rules .note { color: var(--muted); font-size: 9px; }
+.rules .note { color: var(--muted); font-size: 10px; }
 
 @media (max-width: 420px) {
   .app { gap: 7px; }
