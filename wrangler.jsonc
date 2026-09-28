@@ -1,0 +1,16 @@
+{
+  "name": "fortress-web",
+  "compatibility_date": "2026-09-28",
+  "workers_dev": false,
+  "preview_urls": true,
+  "routes": [
+    {
+      "pattern": "fortress.oqzl.net",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "./.build",
+    "not_found_handling": "single-page-application"
+  }
+}

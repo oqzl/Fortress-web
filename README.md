@@ -31,7 +31,28 @@ npm test
 npm run dev
 ```
 
-Production build output goes to `.build/`; the browser source lives under `web/`
+The browser source lives under `web/`. Vite writes the production bundle to `.build/`
+
+## Deployment
+
+Production is configured for Cloudflare Workers Static Assets
+
+- Worker name: `fortress-web`
+- Production domain: `fortress.oqzl.net`
+- Production branch: `main`
+- Build command: `npm run build`
+- Deploy command: `npx wrangler deploy`
+- Static assets: `.build/`
+
+For a manual authenticated deployment:
+
+```sh
+npm ci
+npm test
+npm run deploy
+```
+
+`wrangler.jsonc` declares `fortress.oqzl.net` as a Cloudflare Worker Custom Domain, so Cloudflare manages the DNS record and certificate when the deployment is applied
 
 ## Sources
 
