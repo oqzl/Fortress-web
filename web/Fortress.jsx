@@ -143,6 +143,22 @@ export default function FortressGame() {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!showRules) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setShowRules(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showRules]);
+
   const finishIfNeeded = useCallback((nextBoard, nextCounts) => {
     if (nextCounts[WHITE] < movesPerPlayer || nextCounts[BLACK] < movesPerPlayer) return false;
     const score = countTerritory(nextBoard);
@@ -302,7 +318,22 @@ export default function FortressGame() {
 
       <header className="header">
         <div className="eyebrow">⚡ SHORT ATTENTION SPAN EDITION ⚡</div>
-        <h1 className="title" data-text="FORTRESS">FORTRESS</h1>
+        <div className="title-line">
+          <h1 className="title" data-text="FORTRESS">FORTRESS</h1>
+          <button
+            type="button"
+            className="rules-icon-button"
+            onClick={() => setShowRules(true)}
+            aria-label="ルールを表示"
+            title="ルール"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M9.7 9.1a2.5 2.5 0 0 1 4.8.9c0 1.8-2.5 2.1-2.5 3.8" />
+              <circle className="rules-icon-dot" cx="12" cy="17.2" r="1" />
+            </svg>
+          </button>
+        </div>
         <div className="versus"><span>ﾈｺﾁｬﾝ</span><b>VS</b><span>ｼﾏｴﾅｶﾞ</span></div>
       </header>
 
@@ -406,12 +437,9 @@ export default function FortressGame() {
             </select>
           </div>
         ) : (
-          <div className="control">
-            <label htmlFor="siege">ﾔﾊﾞ表示</label>
-            <select id="siege" value={showSiege ? "on" : "off"} onChange={(event) => setShowSiege(event.target.value === "on")}>
-              <option value="on">ON</option>
-              <option value="off">OFF</option>
-            </select>
+          <div className="control control-static">
+            <label>MATCH</label>
+            <strong>LOCAL / 2 PLAYERS</strong>
           </div>
         )}
 
@@ -435,35 +463,39 @@ export default function FortressGame() {
           />
         </div>
 
-        {mode === "cpu" ? (
-          <button type="button" className="control-button" onClick={() => setShowSiege((value) => !value)}>
-            ﾔﾊﾞ表示 {showSiege ? "ON" : "OFF"}
-          </button>
-        ) : null}
+        <button type="button" className="control-button" onClick={() => setShowSiege((value) => !value)}>
+          ﾔﾊﾞ表示 {showSiege ? "ON" : "OFF"}
+        </button>
         <button type="button" className="control-button primary" onClick={() => resetGame()}>
           ✦ NEW GAME ✦
-        </button>
-        <button type="button" className="control-button" onClick={() => setShowRules((value) => !value)}>
-          {showRules ? "RULES閉じる" : "3秒でRULES"}
         </button>
       </section>
 
       {showRules ? (
-        <section className="rules">
-          <h2>3秒でわかるRULES</h2>
-          <p>6×6盤をﾈｺﾁｬﾝとｼﾏｴﾅｶﾞで取り合う。標準は各21手</p>
-          <ul>
-            <li>空きマスにLv.1を置く、または自分の子をLv.3まで強化</li>
-            <li>自マス＋上下左右へ、Lvと同じだけパワーを飛ばす</li>
-            <li>そのマスでパワーが大きい側の色になる。同点は中立</li>
-            <li>敵色になった場所にいる子は消える</li>
-            <li>敵色の空きマスへ突っ込む自爆配置もOK。消える瞬間まではパワーを出す</li>
-            <li>双方の手数終了時に、取ったマスが多い側の勝ち</li>
-          </ul>
-          <p>マス下の青・ピンク数字が双方のパワー。「ﾔﾊﾞ」はその子のいるマスが同点状態</p>
-          {mode === "cpu" ? <p>{AI_PROFILES[profileId].name}: {AI_PROFILES[profileId].description}</p> : null}
-          <p className="note">見た目だけ限界まで騒がしくしたが、FORTRESSのルールエンジン自体は変更していない</p>
-        </section>
+        <div
+          className="rules-modal"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setShowRules(false);
+          }}
+        >
+          <section className="rules rules-dialog" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+            <button type="button" className="rules-close" onClick={() => setShowRules(false)} aria-label="ルールを閉じる">×</button>
+            <h2 id="rules-title">3秒でわかるRULES</h2>
+            <p>6×6盤をﾈｺﾁｬﾝとｼﾏｴﾅｶﾞで取り合う。標準は各21手</p>
+            <ul>
+              <li>空きマスにLv.1を置く、または自分の子をLv.3まで強化</li>
+              <li>自マス＋上下左右へ、Lvと同じだけパワーを飛ばす</li>
+              <li>そのマスでパワーが大きい側の色になる。同点は中立</li>
+              <li>敵色になった場所にいる子は消える</li>
+              <li>敵色の空きマスへ突っ込む自爆配置もOK。消える瞬間まではパワーを出す</li>
+              <li>双方の手数終了時に、取ったマスが多い側の勝ち</li>
+            </ul>
+            <p>マス下の青・ピンク数字が双方のパワー。「ﾔﾊﾞ」はその子のいるマスが同点状態</p>
+            {mode === "cpu" ? <p>{AI_PROFILES[profileId].name}: {AI_PROFILES[profileId].description}</p> : null}
+            <p className="note">見た目だけ限界まで騒がしくしたが、FORTRESSのルールエンジン自体は変更していない</p>
+          </section>
+        </div>
       ) : null}
     </main>
   );
