@@ -2,18 +2,30 @@
 
 A browser reimplementation of SSI's 1983 abstract strategy game FORTRESS by Jim Templeman and Patty Denbrook
 
-This repository does not include original game assets. The board, castle graphics, UI, and AI are new implementations based on documented rules and descriptions of the original game
+This repository does not include original game assets. The board, mascot graphics, UI, and AI are new implementations based on documented rules and descriptions of the original game
+
+## Current theme
+
+The game rules remain FORTRESS, while the presentation is remixed as a high-stimulation "ﾈｺﾁｬﾝ vs ｼﾏｴﾅｶﾞ" edition
+
+- WHITE is represented by ﾈｺﾁｬﾝ
+- BLACK is represented by ｼﾏｴﾅｶﾞ
+- Pieces pulse continuously and higher levels add aura/crown effects
+- Placement, fortification, capture, turn progress, and the endgame use distinct visual feedback
+- Match progress increases animation intensity toward the final moves
+- \`prefers-reduced-motion\` disables the continuous motion for users who request it
+- The game engine and FORTRESS rules are unchanged
 
 ## Rules implemented
 
 - 6×6 board
 - Each player gets 21 moves by default; game length is configurable from 1 to 54 moves per player
-- On a move, place a strength-1 castle on any empty square or fortify one of your castles up to strength 3
-- A castle projects its strength onto its own square and the four cardinally adjacent squares
+- On a move, place a strength-1 unit on any empty square or fortify one of your units up to strength 3
+- A unit projects its strength onto its own square and the four cardinally adjacent squares
 - The side with more total influence controls a square; ties are neutral
-- A castle on an enemy-controlled square is destroyed
-- A newly placed suicidal castle contributes its influence before destruction, so mutually destructive moves are possible
-- Defeated castles from a move are removed simultaneously
+- A unit on an enemy-controlled square is destroyed
+- A newly placed suicidal unit contributes its influence before destruction, so mutually destructive moves are possible
+- Defeated units from a move are removed simultaneously
 - The winner is the side controlling more squares after both players have used all moves
 
 ## Modes
@@ -25,34 +37,34 @@ The five CPU profiles use modern search/evaluation code to approximate the docum
 
 ## Development
 
-```sh
+\`\`\`sh
 npm ci
 npm test
 npm run dev
-```
+\`\`\`
 
-The browser source lives under `web/`. Vite writes the production bundle to `.build/`
+The browser source lives under \`web/\`. Vite writes the production bundle to \`.build/\`
 
 ## Deployment
 
 Production is configured for Cloudflare Workers Static Assets
 
-- Worker name: `fortress-web`
-- Production domain: `fortress.oqzl.net`
-- Production branch: `main`
-- Build command: `npm run build`
-- Deploy command: `npx wrangler deploy`
-- Static assets: `.build/`
+- Worker name: \`fortress-web\`
+- Production domain: \`fortress.oqzl.net\`
+- Production branch: \`main\`
+- Build command: \`npm run build\`
+- Deploy command: \`npx wrangler deploy\`
+- Static assets: \`.build/\`
 
 For a manual authenticated deployment:
 
-```sh
+\`\`\`sh
 npm ci
 npm test
 npm run deploy
-```
+\`\`\`
 
-`wrangler.jsonc` declares `fortress.oqzl.net` as a Cloudflare Worker Custom Domain, so Cloudflare manages the DNS record and certificate when the deployment is applied
+\`wrangler.jsonc\` declares \`fortress.oqzl.net\` as a Cloudflare Worker Custom Domain, so Cloudflare manages the DNS record and certificate when the deployment is applied
 
 ## Sources
 
